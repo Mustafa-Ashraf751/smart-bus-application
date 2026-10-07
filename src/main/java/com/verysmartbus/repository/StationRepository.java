@@ -15,6 +15,7 @@ public interface StationRepository extends JpaRepository<Station, Long>, Station
             FROM stations station
             JOIN trip_stations trip_station ON trip_station.station_id = station.id
             WHERE trip_station.trip_id = :tripId
+              AND trip_station.status = 'ACTIVE'
               AND station.status = 'ACTIVE'
               AND extensions.ST_Covers(
                     station.area,

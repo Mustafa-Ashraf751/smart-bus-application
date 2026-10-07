@@ -1,18 +1,15 @@
 package com.verysmartbus.dto.response;
 
-import com.verysmartbus.entity.enums.TripStationStatus;
-
 import java.time.OffsetDateTime;
 import java.time.LocalTime;
 
-public record TripStationResponseDto(
+public record RouteStationResponseDto(
         Long id,
-        Long tripId,
+        Long routeId,
         Long stationId,
         String stationName,
         Integer stopOrder,
         LocalTime expectedArrivalTime,
-        TripStationStatus status,
         OffsetDateTime createdAt
 ) {
 }

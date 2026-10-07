@@ -5,6 +5,7 @@ import com.verysmartbus.dto.response.TripStationResponseDto;
 import com.verysmartbus.entity.Trip;
 import com.verysmartbus.entity.TripStation;
 import com.verysmartbus.entity.Station;
+import com.verysmartbus.entity.RouteStation;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -15,6 +16,16 @@ public class TripStationMapper {
                 .trip(trip)
                 .station(station)
                 .stopOrder(dto.stopOrder())
+                .expectedArrivalTime(dto.expectedArrivalTime())
+                .build();
+    }
+
+    public TripStation fromRouteStation(RouteStation routeStation, Trip trip) {
+        return TripStation.builder()
+                .trip(trip)
+                .station(routeStation.getStation())
+                .stopOrder(routeStation.getStopOrder())
+                .expectedArrivalTime(routeStation.getExpectedArrivalTime())
                 .build();
     }
 
@@ -25,6 +36,8 @@ public class TripStationMapper {
                 entity.getStation().getId(),
                 entity.getStation().getName(),
                 entity.getStopOrder(),
+                entity.getExpectedArrivalTime(),
+                entity.getStatus(),
                 entity.getCreatedAt()
         );
     }

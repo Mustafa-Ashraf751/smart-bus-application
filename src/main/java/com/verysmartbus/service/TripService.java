@@ -8,6 +8,7 @@ import com.verysmartbus.dto.response.TripResponseDto;
 import com.verysmartbus.entity.AppUser;
 import com.verysmartbus.entity.Bus;
 import com.verysmartbus.entity.Route;
+import com.verysmartbus.entity.RouteStation;
 import com.verysmartbus.entity.Station;
 import com.verysmartbus.entity.Trip;
 import com.verysmartbus.entity.TripStationPresence;
@@ -17,12 +18,16 @@ import com.verysmartbus.exception.ForbiddenOperationException;
 import com.verysmartbus.exception.ResourceNotFoundException;
 import com.verysmartbus.mapper.TripMapper;
 import com.verysmartbus.mapper.LocationMapper;
+import com.verysmartbus.mapper.TripStationMapper;
 import com.verysmartbus.repository.BusRepository;
 import com.verysmartbus.repository.RouteRepository;
+import com.verysmartbus.repository.RouteStationRepository;
 import com.verysmartbus.repository.StationRepository;
 import com.verysmartbus.repository.TripRepository;
+import com.verysmartbus.repository.TripStationRepository;
 import com.verysmartbus.repository.TripStationPresenceRepository;
 import com.verysmartbus.repository.UserRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -46,13 +51,16 @@ public class TripService {
 
     private final TripRepository tripRepository;
     private final RouteRepository routeRepository;
+    private final RouteStationRepository routeStationRepository;
     private final BusRepository busRepository;
     private final UserRepository userRepository;
     private final StationRepository stationRepository;
+    private final TripStationRepository tripStationRepository;
     private final TripStationPresenceRepository tripStationPresenceRepository;
     private final LocationFreshnessService locationFreshnessService;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final TripMapper mapper;
+    private final TripStationMapper tripStationMapper;
     private final LocationMapper locationMapper;
 
     public List<TripResponseDto> findAll() {
@@ -95,7 +103,16 @@ public class TripService {
         Bus bus = findBusById(dto.busId());
         AppUser driver = findDriverById(dto.driverId());
 
+        List<RouteStation> routeStations = routeStationRepository
+                .findAllByRoute_IdOrderByStopOrderAsc(route.getId());
+        if (routeStations.isEmpty()) {
+            throw new IllegalStateException("Cannot create a trip for a route without stations.");
+        }
+
         Trip saved = tripRepository.save(mapper.toEntity(dto, route, bus, driver));
+        tripStationRepository.saveAll(routeStations.stream()
+                .map(routeStation -> tripStationMapper.fromRouteStation(routeStation, saved))
+                .toList());
         return mapper.toResponseDto(saved);
     }
 
@@ -247,5 +264,54 @@ public class TripService {
                 locationFreshnessService.isStale(trip.getLocationUpdatedAt()),
                 stationsContainingBus
         );
+    }
+
+    @Transactional
+    public TripResponseDto startTrip(Long currentDriverId, Long tripId) {
+        Trip trip = tripRepository.findById(tripId)
+                .orElseThrow(() -> new EntityNotFoundException("Trip not found: " + tripId));
+
+        // تأكد إن السائق ده فعلاً سائق الرحلة دي، مش أي سائق تاني
+        if (!trip.getDriver().getId().equals(currentDriverId)) {
+            throw new ForbiddenOperationException("You are not the driver assigned to this trip.");
+        }
+
+        // أول حاجة قبل أي منطق تاني: اتأكد إن الحالة بتاعة النهاردة، مش يوم فات
+        trip.resetIfStale();
+
+        // دلوقتي بعد التصفير، اتأكد إن مفيش بدء مزدوج النهاردة نفسها
+        if (trip.getStatus() == TripStatus.IN_PROGRESS) {
+            throw new IllegalStateException("Trip is already in progress.");
+        }
+        if (trip.getStatus() == TripStatus.COMPLETED) {
+            throw new IllegalStateException("Trip has already been completed today.");
+        }
+        if (trip.getStatus() == TripStatus.CANCELLED) {
+            throw new IllegalStateException("Cannot start a cancelled trip.");
+        }
+
+        trip.setStatus(TripStatus.IN_PROGRESS);
+        trip.setActualStartTime(OffsetDateTime.now());
+
+        return mapper.toResponseDto(tripRepository.save(trip));
+    }
+
+    @Transactional
+    public TripResponseDto endTrip(Long currentDriverId, Long tripId) {
+        Trip trip = tripRepository.findById(tripId)
+                .orElseThrow(() -> new EntityNotFoundException("Trip not found: " + tripId));
+
+        if (!trip.getDriver().getId().equals(currentDriverId)) {
+            throw new ForbiddenOperationException("You are not the driver assigned to this trip.");
+        }
+
+        if (trip.getStatus() != TripStatus.IN_PROGRESS) {
+            throw new IllegalStateException("Trip is not currently in progress.");
+        }
+
+        trip.setStatus(TripStatus.COMPLETED);
+        trip.setActualEndTime(OffsetDateTime.now());
+
+        return mapper.toResponseDto(tripRepository.save(trip));
     }
 }

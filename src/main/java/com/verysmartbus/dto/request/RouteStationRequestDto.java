@@ -5,9 +5,9 @@ import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalTime;
 
-public record TripStationRequestDto(
-        @NotNull(message = "tripId is required")
-        Long tripId,
+public record RouteStationRequestDto(
+        @NotNull(message = "routeId is required")
+        Long routeId,
 
         @NotNull(message = "stationId is required")
         Long stationId,

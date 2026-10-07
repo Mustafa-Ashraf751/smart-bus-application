@@ -2,10 +2,12 @@ package com.verysmartbus.controller;
 
 import com.verysmartbus.dto.request.TripRequestDto;
 import com.verysmartbus.dto.response.TripResponseDto;
+import com.verysmartbus.security.AuthenticatedUserResolver;
 import com.verysmartbus.service.TripService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -18,6 +20,7 @@ import java.util.List;
 public class TripController {
 
     private final TripService tripService;
+    private final AuthenticatedUserResolver userResolver;
 
     @PostMapping
     public ResponseEntity<TripResponseDto> create(@Valid @RequestBody TripRequestDto dto) {

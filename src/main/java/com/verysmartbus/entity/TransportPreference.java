@@ -61,8 +61,9 @@ public class TransportPreference {
     @Column(name = "direction", nullable = false, length = 20)
     private Direction direction;
 
-    @Column(name = "preferred_time", nullable = false)
-    private LocalTime preferredTime;
+    @Column(name = "active", nullable = false)
+    @Builder.Default
+    private Boolean active = true;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -71,4 +72,6 @@ public class TransportPreference {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+
 }

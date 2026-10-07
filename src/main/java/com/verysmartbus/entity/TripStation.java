@@ -1,5 +1,6 @@
 package com.verysmartbus.entity;
 
+import com.verysmartbus.entity.enums.TripStationStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -8,6 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
 
 @Entity
@@ -39,6 +41,14 @@ public class TripStation {
 
     @Column(name = "stop_order", nullable = false)
     private Integer stopOrder;
+
+    @Column(name = "expected_arrival_time", nullable = false)
+    private LocalTime expectedArrivalTime;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private TripStationStatus status = TripStationStatus.ACTIVE;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

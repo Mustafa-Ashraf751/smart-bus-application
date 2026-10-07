@@ -11,4 +11,5 @@ public interface TransportPreferenceRepository extends JpaRepository<TransportPr
     List<TransportPreference> findByUser_Id(Long Id);
 
     boolean existsByUser_IdAndDirection(Long Id, Direction direction);
+    List<TransportPreference> findByActiveTrue();
 }
