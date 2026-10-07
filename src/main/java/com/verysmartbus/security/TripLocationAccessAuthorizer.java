@@ -27,6 +27,9 @@ public class TripLocationAccessAuthorizer {
 
         Trip trip = tripRepository.findById(tripId)
                 .orElseThrow(() -> new ResourceNotFoundException("Trip", tripId));
+        if (trip.getBusAdmin() != null && trip.getBusAdmin().getId().equals(principal.getUserId())) {
+            return;
+        }
         if (trip.getDriver().getId().equals(principal.getUserId())) {
             return;
         }
