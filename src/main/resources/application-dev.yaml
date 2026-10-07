@@ -11,3 +11,4 @@ spring:
       connection-timeout: 30000
       keepalive-time: 30000
       max-lifetime: 1800000
+

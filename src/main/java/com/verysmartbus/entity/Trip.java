@@ -13,6 +13,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 import org.locationtech.jts.geom.Point;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 @Entity
@@ -61,6 +62,9 @@ public class Trip {
     @Builder.Default
     private TripStatus status = TripStatus.SCHEDULED;
 
+    @Column(name = "active_date")
+    private LocalDate activeDate;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
@@ -68,4 +72,23 @@ public class Trip {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
+
+    /**
+     * لو آخر مرة اتسجلت فيها حالة تشغيلية للرحلة دي مش النهاردة،
+     * يصفّر كل حاجة خاصة باليوم (الحالة، الأوقات الفعلية، الموقع)
+     * استعدادًا ليوم جديد. بترجع true لو فعلاً حصل تصفير.
+     */
+    public boolean resetIfStale() {
+        LocalDate today = LocalDate.now();
+        if (this.activeDate == null || !this.activeDate.equals(today)) {
+            this.status = TripStatus.SCHEDULED;
+            this.actualStartTime = null;
+            this.actualEndTime = null;
+            this.currentLocation = null;
+            this.locationUpdatedAt = null;
+            this.activeDate = today;
+            return true;
+        }
+        return false;
+    }
 }

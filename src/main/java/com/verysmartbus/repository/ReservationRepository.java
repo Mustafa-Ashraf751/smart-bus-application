@@ -13,7 +13,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
     List<Reservation> findByTrip_Id(Long tripId);
 
-
+    Optional<Reservation> findFirstByUser_Id(Long userId);
     Optional<Reservation> findByUser_IdAndTrip_Id(Long userId, Long tripId);
 
     boolean existsByUser_IdAndTrip_Id(Long userId, Long tripId);
@@ -21,4 +21,4 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     boolean existsByUser_IdAndTrip_IdAndStatus(Long userId, Long tripId, ReservationStatus status);
 
     long countByTrip_IdAndStatusNot(Long tripId, ReservationStatus status);
-}
+    Optional<Reservation> findByUser_IdAndStatusNot(Long userId, ReservationStatus status);}

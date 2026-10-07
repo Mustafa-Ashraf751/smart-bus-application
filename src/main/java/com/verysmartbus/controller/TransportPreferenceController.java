@@ -58,4 +58,14 @@ public class TransportPreferenceController {
         transportPreferenceService.delete(currentUserId, preferenceId);
         return ResponseEntity.noContent().build();
     }
+
+    // ضيف الميثود دي في TransportPreferenceController.java
+    @PatchMapping("/{preferenceId}/toggle-active")
+    public ResponseEntity<TransportPreferenceResponseDto> toggleActive(
+            @PathVariable Long preferenceId,
+            Authentication authentication) {
+
+        Long currentUserId = userResolver.getCurrentUserId(authentication);
+        return ResponseEntity.ok(transportPreferenceService.toggleActive(currentUserId, preferenceId));
+    }
 }

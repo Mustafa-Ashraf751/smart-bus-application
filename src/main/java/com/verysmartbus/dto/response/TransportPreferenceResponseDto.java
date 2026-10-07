@@ -4,7 +4,6 @@ import com.verysmartbus.entity.enums.Direction;
 import com.verysmartbus.entity.TransportPreference;
 
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 
 
 public record TransportPreferenceResponseDto(
@@ -15,7 +14,6 @@ public record TransportPreferenceResponseDto(
         Long stationId,
         String stationName,
         Direction direction,
-        LocalTime preferredTime,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
@@ -28,7 +26,6 @@ public record TransportPreferenceResponseDto(
                 entity.getStation().getId(),
                 entity.getStation().getName(),
                 entity.getDirection(),
-                entity.getPreferredTime(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
         );

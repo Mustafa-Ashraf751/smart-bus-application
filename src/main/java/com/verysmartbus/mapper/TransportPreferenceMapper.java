@@ -18,7 +18,6 @@ public class TransportPreferenceMapper {
                 .route(route)
                 .station(station)
                 .direction(dto.direction())
-                .preferredTime(dto.preferredTime())
                 .build();
     }
 
@@ -27,7 +26,6 @@ public class TransportPreferenceMapper {
         entity.setRoute(route);
         entity.setStation(station);
         entity.setDirection(dto.direction());
-        entity.setPreferredTime(dto.preferredTime());
     }
 
     public TransportPreferenceResponseDto toResponseDto(TransportPreference entity) {
@@ -39,7 +37,6 @@ public class TransportPreferenceMapper {
                 entity.getStation().getId(),
                 entity.getStation().getName(),
                 entity.getDirection(),
-                entity.getPreferredTime(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
         );

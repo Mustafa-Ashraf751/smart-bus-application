@@ -68,6 +68,7 @@ public class TransportPreferenceService {
         return mapper.toResponseDto(existing);
     }
 
+    @Transactional(readOnly = true)
     public List<TransportPreferenceResponseDto> getForUser(Long userId) {
         return transportPreferenceRepository.findByUser_Id(userId).stream()
                 .map(mapper::toResponseDto)
@@ -88,5 +89,17 @@ public class TransportPreferenceService {
         if (!preference.getUser().getId().equals(currentUserId)) {
             throw new ForbiddenOperationException("You do not own this transport preference.");
         }
+    }
+
+    @Transactional
+    public TransportPreferenceResponseDto toggleActive(Long currentUserId, Long preferenceId) {
+        TransportPreference existing = transportPreferenceRepository.findById(preferenceId)
+                .orElseThrow(() -> new EntityNotFoundException("Preference not found: " + preferenceId));
+
+        assertOwnership(existing, currentUserId);
+
+        existing.setActive(!existing.getActive());
+
+        return mapper.toResponseDto(existing);
     }
 }
