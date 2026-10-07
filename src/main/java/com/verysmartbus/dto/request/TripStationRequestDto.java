@@ -1,5 +1,7 @@
 package com.verysmartbus.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
@@ -17,6 +19,8 @@ public record TripStationRequestDto(
         Integer stopOrder,
 
         @NotNull(message = "expectedArrivalTime is required")
+        @JsonFormat(pattern = "HH:mm:ss")
+        @Schema(type = "string", format = "time", example = "13:34:44")
         LocalTime expectedArrivalTime
 ) {
 }

@@ -2,6 +2,7 @@ package com.verysmartbus.dto.request;
 
 import jakarta.validation.constraints.NotNull;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 public record TripRequestDto(
@@ -13,6 +14,9 @@ public record TripRequestDto(
 
         @NotNull(message = "driverId is required")
         Long driverId,
+
+        @NotNull(message = "serviceDate is required")
+        LocalDate serviceDate,
 
         @NotNull(message = "scheduledStartTime is required")
         OffsetDateTime scheduledStartTime

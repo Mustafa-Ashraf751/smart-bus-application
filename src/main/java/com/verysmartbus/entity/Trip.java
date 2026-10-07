@@ -62,8 +62,8 @@ public class Trip {
     @Builder.Default
     private TripStatus status = TripStatus.SCHEDULED;
 
-    @Column(name = "active_date")
-    private LocalDate activeDate;
+    @Column(name = "service_date", nullable = false)
+    private LocalDate serviceDate;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -73,22 +73,4 @@ public class Trip {
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
-    /**
-     * لو آخر مرة اتسجلت فيها حالة تشغيلية للرحلة دي مش النهاردة،
-     * يصفّر كل حاجة خاصة باليوم (الحالة، الأوقات الفعلية، الموقع)
-     * استعدادًا ليوم جديد. بترجع true لو فعلاً حصل تصفير.
-     */
-    public boolean resetIfStale() {
-        LocalDate today = LocalDate.now();
-        if (this.activeDate == null || !this.activeDate.equals(today)) {
-            this.status = TripStatus.SCHEDULED;
-            this.actualStartTime = null;
-            this.actualEndTime = null;
-            this.currentLocation = null;
-            this.locationUpdatedAt = null;
-            this.activeDate = today;
-            return true;
-        }
-        return false;
-    }
 }
