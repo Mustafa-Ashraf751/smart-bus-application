@@ -5,8 +5,6 @@ import com.verysmartbus.dto.request.TripRequestDto;
 import com.verysmartbus.dto.response.StationPresenceResponseDto;
 import com.verysmartbus.dto.response.TripLocationResponseDto;
 import com.verysmartbus.dto.response.TripResponseDto;
-import com.verysmartbus.entity.AppUser;
-import com.verysmartbus.entity.Bus;
 import com.verysmartbus.entity.Route;
 import com.verysmartbus.entity.RouteStation;
 import com.verysmartbus.entity.Station;
@@ -19,14 +17,12 @@ import com.verysmartbus.exception.ResourceNotFoundException;
 import com.verysmartbus.mapper.TripMapper;
 import com.verysmartbus.mapper.LocationMapper;
 import com.verysmartbus.mapper.TripStationMapper;
-import com.verysmartbus.repository.BusRepository;
 import com.verysmartbus.repository.RouteRepository;
 import com.verysmartbus.repository.RouteStationRepository;
 import com.verysmartbus.repository.StationRepository;
 import com.verysmartbus.repository.TripRepository;
 import com.verysmartbus.repository.TripStationRepository;
 import com.verysmartbus.repository.TripStationPresenceRepository;
-import com.verysmartbus.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -48,15 +44,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class TripService {
 
-    private static final String DRIVER_ROLE_NAME = "DRIVER";
     private static final int ARRIVAL_CONFIRMATION_REQUIRED_UPDATES = 2;
     private static final ZoneId BUSINESS_ZONE = ZoneId.of("Africa/Cairo");
 
     private final TripRepository tripRepository;
     private final RouteRepository routeRepository;
     private final RouteStationRepository routeStationRepository;
-    private final BusRepository busRepository;
-    private final UserRepository userRepository;
     private final StationRepository stationRepository;
     private final TripStationRepository tripStationRepository;
     private final TripStationPresenceRepository tripStationPresenceRepository;
@@ -103,8 +96,7 @@ public class TripService {
     @Transactional
     public TripResponseDto create(TripRequestDto dto) {
         Route route = findRouteById(dto.routeId());
-        Bus bus = findBusById(dto.busId());
-        AppUser driver = findDriverById(dto.driverId());
+        ensureRouteIsReadyForTrip(route);
 
         if (tripRepository.existsByRoute_IdAndServiceDate(route.getId(), dto.serviceDate())) {
             throw new IllegalStateException("A trip already exists for this route on " + dto.serviceDate() + ".");
@@ -116,7 +108,7 @@ public class TripService {
             throw new IllegalStateException("Cannot create a trip for a route without stations.");
         }
 
-        Trip saved = tripRepository.save(mapper.toEntity(dto, route, bus, driver));
+        Trip saved = tripRepository.save(mapper.toEntity(dto, route));
         tripStationRepository.saveAll(routeStations.stream()
                 .map(routeStation -> tripStationMapper.fromRouteStation(routeStation, saved))
                 .toList());
@@ -211,22 +203,14 @@ public class TripService {
                 .orElseThrow(() -> new ResourceNotFoundException("Route", routeId));
     }
 
-    private Bus findBusById(Long busId) {
-        return busRepository.findById(busId)
-                .orElseThrow(() -> new ResourceNotFoundException("Bus", busId));
-    }
-
-    private AppUser findDriverById(Long driverId) {
-        AppUser driver = userRepository.findByIdWithRoles(driverId)
-                .orElseThrow(() -> new ResourceNotFoundException("Driver", driverId));
-
-        boolean hasDriverRole = driver.getRoles().stream()
-                .anyMatch(role -> DRIVER_ROLE_NAME.equals(role.getName()));
-        if (!hasDriverRole) {
-            throw new IllegalArgumentException("Assigned user must have the DRIVER role.");
+    private void ensureRouteIsReadyForTrip(Route route) {
+        if (route.getDirection() == null
+                || route.getDefaultDepartureTime() == null
+                || route.getDefaultBus() == null
+                || route.getDefaultDriver() == null
+                || route.getDefaultBusAdmin() == null) {
+            throw new IllegalStateException("Route must have direction, departure time, bus, driver, and bus admin defaults before creating a trip.");
         }
-
-        return driver;
     }
 
     private TripStationPresence updatePresence(

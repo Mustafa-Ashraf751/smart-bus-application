@@ -41,6 +41,10 @@ public class Trip {
     @JoinColumn(name = "driver_id", nullable = false, foreignKey = @ForeignKey(name = "fk_trips_driver"))
     private AppUser driver;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "bus_admin_id", foreignKey = @ForeignKey(name = "fk_trips_bus_admin"))
+    private AppUser busAdmin;
+
     @Column(name = "scheduled_start_time", nullable = false)
     private OffsetDateTime scheduledStartTime;
 

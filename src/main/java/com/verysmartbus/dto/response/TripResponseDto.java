@@ -10,6 +10,7 @@ public record TripResponseDto(
         Long routeId,
         Long busId,
         Long driverId,
+        Long busAdminId,
         LocalDate serviceDate,
         OffsetDateTime scheduledStartTime,
         OffsetDateTime actualStartTime,

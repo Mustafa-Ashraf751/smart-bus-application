@@ -2,8 +2,6 @@ package com.verysmartbus.mapper;
 
 import com.verysmartbus.dto.request.TripRequestDto;
 import com.verysmartbus.dto.response.TripResponseDto;
-import com.verysmartbus.entity.AppUser;
-import com.verysmartbus.entity.Bus;
 import com.verysmartbus.entity.Route;
 import com.verysmartbus.entity.Trip;
 import com.verysmartbus.service.LocationFreshnessService;
@@ -17,13 +15,17 @@ public class TripMapper {
     private final LocationMapper locationMapper;
     private final LocationFreshnessService locationFreshnessService;
 
-    public Trip toEntity(TripRequestDto dto, Route route, Bus bus, AppUser driver) {
+    public Trip toEntity(TripRequestDto dto, Route route) {
         return Trip.builder()
                 .route(route)
-                .bus(bus)
-                .driver(driver)
+                .bus(route.getDefaultBus())
+                .driver(route.getDefaultDriver())
+                .busAdmin(route.getDefaultBusAdmin())
                 .serviceDate(dto.serviceDate())
-                .scheduledStartTime(dto.scheduledStartTime())
+                .scheduledStartTime(dto.serviceDate()
+                        .atTime(route.getDefaultDepartureTime())
+                        .atZone(java.time.ZoneId.of("Africa/Cairo"))
+                        .toOffsetDateTime())
                 .build();
     }
 
@@ -33,6 +35,7 @@ public class TripMapper {
                 entity.getRoute().getId(),
                 entity.getBus().getId(),
                 entity.getDriver().getId(),
+                entity.getBusAdmin() == null ? null : entity.getBusAdmin().getId(),
                 entity.getServiceDate(),
                 entity.getScheduledStartTime(),
                 entity.getActualStartTime(),
