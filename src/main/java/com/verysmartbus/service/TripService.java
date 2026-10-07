@@ -33,7 +33,9 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +50,7 @@ public class TripService {
 
     private static final String DRIVER_ROLE_NAME = "DRIVER";
     private static final int ARRIVAL_CONFIRMATION_REQUIRED_UPDATES = 2;
+    private static final ZoneId BUSINESS_ZONE = ZoneId.of("Africa/Cairo");
 
     private final TripRepository tripRepository;
     private final RouteRepository routeRepository;
@@ -102,6 +105,10 @@ public class TripService {
         Route route = findRouteById(dto.routeId());
         Bus bus = findBusById(dto.busId());
         AppUser driver = findDriverById(dto.driverId());
+
+        if (tripRepository.existsByRoute_IdAndServiceDate(route.getId(), dto.serviceDate())) {
+            throw new IllegalStateException("A trip already exists for this route on " + dto.serviceDate() + ".");
+        }
 
         List<RouteStation> routeStations = routeStationRepository
                 .findAllByRoute_IdOrderByStopOrderAsc(route.getId());
@@ -276,10 +283,7 @@ public class TripService {
             throw new ForbiddenOperationException("You are not the driver assigned to this trip.");
         }
 
-        // أول حاجة قبل أي منطق تاني: اتأكد إن الحالة بتاعة النهاردة، مش يوم فات
-        trip.resetIfStale();
-
-        // دلوقتي بعد التصفير، اتأكد إن مفيش بدء مزدوج النهاردة نفسها
+        ensureTripRunsToday(trip);
         if (trip.getStatus() == TripStatus.IN_PROGRESS) {
             throw new IllegalStateException("Trip is already in progress.");
         }
@@ -305,6 +309,8 @@ public class TripService {
             throw new ForbiddenOperationException("You are not the driver assigned to this trip.");
         }
 
+        ensureTripRunsToday(trip);
+
         if (trip.getStatus() != TripStatus.IN_PROGRESS) {
             throw new IllegalStateException("Trip is not currently in progress.");
         }
@@ -313,5 +319,13 @@ public class TripService {
         trip.setActualEndTime(OffsetDateTime.now());
 
         return mapper.toResponseDto(tripRepository.save(trip));
+    }
+
+    private void ensureTripRunsToday(Trip trip) {
+        LocalDate today = LocalDate.now(BUSINESS_ZONE);
+        if (!trip.getServiceDate().equals(today)) {
+            throw new IllegalStateException("This trip can be operated only on its service date: "
+                    + trip.getServiceDate() + ".");
+        }
     }
 }

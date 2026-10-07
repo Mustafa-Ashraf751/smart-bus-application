@@ -22,6 +22,7 @@ public class TripMapper {
                 .route(route)
                 .bus(bus)
                 .driver(driver)
+                .serviceDate(dto.serviceDate())
                 .scheduledStartTime(dto.scheduledStartTime())
                 .build();
     }
@@ -32,6 +33,7 @@ public class TripMapper {
                 entity.getRoute().getId(),
                 entity.getBus().getId(),
                 entity.getDriver().getId(),
+                entity.getServiceDate(),
                 entity.getScheduledStartTime(),
                 entity.getActualStartTime(),
                 entity.getActualEndTime(),
