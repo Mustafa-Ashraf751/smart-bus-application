@@ -9,6 +9,8 @@ import java.util.Optional;
 
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
 
+    boolean existsByPickupTripStation_Id(Long tripStationId);
+
     List<Reservation> findByUser_Id(Long userId);
 
     List<Reservation> findByTrip_Id(Long tripId);
