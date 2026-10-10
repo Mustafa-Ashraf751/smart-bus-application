@@ -2,6 +2,7 @@ package com.verysmartbus.dto.response;
 
 import com.verysmartbus.entity.enums.TripStatus;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 public record TripResponseDto(
@@ -9,6 +10,8 @@ public record TripResponseDto(
         Long routeId,
         Long busId,
         Long driverId,
+        Long busAdminId,
+        LocalDate serviceDate,
         OffsetDateTime scheduledStartTime,
         OffsetDateTime actualStartTime,
         OffsetDateTime actualEndTime,
