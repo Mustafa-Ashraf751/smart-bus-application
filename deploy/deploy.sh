@@ -44,6 +44,9 @@ if wait_healthy; then
 fi
 
 echo "Health check failed for $APP_IMAGE" >&2
+docker inspect verysmartbus-app \
+  --format 'Status={{.State.Status}} ExitCode={{.State.ExitCode}} OOMKilled={{.State.OOMKilled}} Restarts={{.RestartCount}}' >&2 || true
+free -h >&2 || true
 docker logs --tail 200 verysmartbus-app || true
 
 if [ -n "$PREVIOUS_IMAGE" ] && [ "$PREVIOUS_IMAGE" != "$APP_IMAGE" ]; then

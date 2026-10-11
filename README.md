@@ -54,12 +54,12 @@ Example: `V2__add_bus_table.sql`
 ## CI/CD (deploy to VPS)
 `.github/workflows/ci-cd.yml`:
 - **Pull requests to `main`** → `mvn verify` on JDK 17.
-- **Push/merge to `main`** → tests → Docker image pushed to `ghcr.io/<owner>/<repo>:<sha>` (+ `latest`) → SSH to the VPS → `deploy/deploy.sh` pulls the image, restarts it with Docker Compose, waits for `/actuator/health`, and rolls back to the previous image if it never becomes healthy.
+- **Push/merge to `main`** → tests → Docker image pushed to `ghcr.io/<owner>/<repo>:<sha>` (+ `latest`) → SSH to the VPS → `deploy/deploy.sh` pulls the image, restarts it with Docker Compose next to a local PostGIS container (`verysmartbus-db`), waits for `/actuator/health`, and rolls back to the previous image if it never becomes healthy.
 
 ### One-time VPS setup
 1. Install Docker + the Compose plugin and `curl`; create a deploy user in the `docker` group.
 2. Create the deploy directory (default `/opt/verysmartbus`) owned by that user.
-3. Create `/opt/verysmartbus/.env` from [`deploy/.env.example`](deploy/.env.example) with the real `DB_PASSWORD` and `JWT_SECRET`.
+3. Create `/opt/verysmartbus/.env` from [`deploy/.env.example`](deploy/.env.example) and set `POSTGRES_PASSWORD` and `JWT_SECRET`. `POSTGRES_PASSWORD` is only applied when the database volume is first created.
 4. Add the deploy public key to the user's `~/.ssh/authorized_keys`.
 
 ### GitHub settings (Settings → Secrets and variables → Actions)
@@ -73,6 +73,13 @@ Example: `V2__add_bus_table.sql`
 | `DEPLOY_PATH` | variable | no | default `/opt/verysmartbus` |
 
 The deploy job runs in the `production` environment, so you can add required reviewers there to gate deployments.
+
+### Production database
+PostgreSQL + PostGIS runs in the `verysmartbus-db` container (port bound to `127.0.0.1` only); data lives in the `verysmartbus_postgres_data` Docker volume and survives redeploys. PostGIS is installed in the `extensions` schema, as on Supabase. Memory is tuned for a 2 GB server (app heap `-Xmx512m`, Postgres `shared_buffers=256MB`).
+- Copy data from Supabase (one-time, replaces the local `public` schema): `cd /opt/verysmartbus && bash migrate-from-supabase.sh`
+- psql on the VPS: `docker exec -it verysmartbus-db psql -U postgres -d smart_bus_db`
+- From your PC (DBeaver/pgAdmin): `ssh -L 5432:localhost:5432 deploy@<vps-ip>`, then connect to `localhost:5432`
+- Backup: `docker exec verysmartbus-db pg_dump -U postgres -Fc smart_bus_db > backup.dump`
 
 ## Project Structure
 ```
