@@ -117,7 +117,7 @@ jobs:
       - name: Upload deployment files
         run: |
           ssh vps "mkdir -p '$DEPLOY_PATH'"
-          scp deploy/docker-compose.prod.yml deploy/deploy.sh deploy/.env.example "vps:$DEPLOY_PATH/"
+          scp -r deploy/docker-compose.prod.yml deploy/deploy.sh deploy/migrate-from-supabase.sh deploy/.env.example deploy/initdb "vps:$DEPLOY_PATH/"
 
       - name: Log in to GHCR on VPS
         env:
