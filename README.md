@@ -51,6 +51,29 @@ src/main/resources/db/migration/
 Naming convention: `V{version}__{description}.sql`  
 Example: `V2__add_bus_table.sql`
 
+## CI/CD (deploy to VPS)
+`.github/workflows/ci-cd.yml`:
+- **Pull requests to `main`** → `mvn verify` on JDK 17.
+- **Push/merge to `main`** → tests → Docker image pushed to `ghcr.io/<owner>/<repo>:<sha>` (+ `latest`) → SSH to the VPS → `deploy/deploy.sh` pulls the image, restarts it with Docker Compose, waits for `/actuator/health`, and rolls back to the previous image if it never becomes healthy.
+
+### One-time VPS setup
+1. Install Docker + the Compose plugin and `curl`; create a deploy user in the `docker` group.
+2. Create the deploy directory (default `/opt/verysmartbus`) owned by that user.
+3. Create `/opt/verysmartbus/.env` from [`deploy/.env.example`](deploy/.env.example) with the real `DB_PASSWORD` and `JWT_SECRET`.
+4. Add the deploy public key to the user's `~/.ssh/authorized_keys`.
+
+### GitHub settings (Settings → Secrets and variables → Actions)
+| Name | Kind | Required | Value |
+|---|---|---|---|
+| `VPS_HOST` | secret | yes | VPS IP / hostname |
+| `VPS_USER` | secret | yes | deploy user |
+| `VPS_SSH_KEY` | secret | yes | private key (e.g. `ssh-keygen -t ed25519`) |
+| `VPS_PORT` | secret | no | SSH port, default `22` |
+| `VPS_KNOWN_HOSTS` | secret | recommended | output of `ssh-keyscan -p <port> <host>`; falls back to keyscan at deploy time |
+| `DEPLOY_PATH` | variable | no | default `/opt/verysmartbus` |
+
+The deploy job runs in the `production` environment, so you can add required reviewers there to gate deployments.
+
 ## Project Structure
 ```
 src/main/java/com/verysmartbus/
