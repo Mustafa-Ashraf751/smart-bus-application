@@ -1,0 +1,11 @@
+package com.verysmartbus.entity.enums;
+
+public enum NotificationType {
+    RESERVATION_CONFIRMED,
+    RESERVATION_WAITLISTED,
+    WAITLIST_PROMOTED,
+    RESERVATION_CANCELLED,
+    TRIP_STARTED,
+    TRIP_CANCELLED,
+    TRIP_STATION_TIME_UPDATED
+}

@@ -23,6 +23,7 @@ public class WebSocketJwtChannelInterceptor implements ChannelInterceptor {
     private static final String BEARER_PREFIX = "Bearer ";
     private static final String TRIP_LOCATION_TOPIC_PREFIX = "/topic/trips/";
     private static final String TRIP_LOCATION_TOPIC_SUFFIX = "/location";
+    private static final String USER_NOTIFICATION_DESTINATION = "/user/queue/notifications";
 
     private final JwtService jwtService;
     private final CustomUserDetailsService userDetailsService;
@@ -93,6 +94,12 @@ public class WebSocketJwtChannelInterceptor implements ChannelInterceptor {
 
     private void authorizeSubscription(StompHeaderAccessor accessor) {
         String destination = accessor.getDestination();
+        if (USER_NOTIFICATION_DESTINATION.equals(destination)) {
+            if (!(accessor.getUser() instanceof Authentication)) {
+                throw new AccessDeniedException("Notification subscriptions require an authenticated user.");
+            }
+            return;
+        }
         if (destination == null
                 || !destination.startsWith(TRIP_LOCATION_TOPIC_PREFIX)
                 || !destination.endsWith(TRIP_LOCATION_TOPIC_SUFFIX)) {
