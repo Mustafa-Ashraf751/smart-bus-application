@@ -120,9 +120,12 @@ public class ReservationService {
             throw new IllegalStateException("Cannot reserve a cancelled trip.");
         }
 
-        TripStation pickupStation = tripStationRepository
-                .findByTrip_IdAndStation_Id(trip.getId(), request.pickupTripStationId())
-                .orElseThrow(() -> new IllegalStateException("Invalid pickup station."));
+        TripStation pickupStation = tripStationRepository.findById(request.pickupTripStationId())
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Trip station not found: " + request.pickupTripStationId()));
+        if (!pickupStation.getTrip().getId().equals(trip.getId())) {
+            throw new IllegalArgumentException("The trip station does not belong to this trip.");
+        }
 
         var existingOpt = reservationRepository.findFirstByUser_Id(currentUserId);
 
