@@ -4,102 +4,125 @@ import com.verysmartbus.dto.request.TransportPreferenceRequestDto;
 import com.verysmartbus.dto.response.TransportPreferenceResponseDto;
 import com.verysmartbus.entity.AppUser;
 import com.verysmartbus.entity.Route;
-import com.verysmartbus.entity.Station;
+import com.verysmartbus.entity.RouteStation;
 import com.verysmartbus.entity.TransportPreference;
+import com.verysmartbus.entity.enums.RouteStatus;
 import com.verysmartbus.exception.ForbiddenOperationException;
+import com.verysmartbus.exception.ResourceNotFoundException;
 import com.verysmartbus.mapper.TransportPreferenceMapper;
 import com.verysmartbus.repository.RouteRepository;
-import com.verysmartbus.repository.StationRepository;
+import com.verysmartbus.repository.RouteStationRepository;
 import com.verysmartbus.repository.TransportPreferenceRepository;
 import com.verysmartbus.repository.UserRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-
 @Service
 @RequiredArgsConstructor
 public class TransportPreferenceService {
 
-    private final TransportPreferenceRepository transportPreferenceRepository;
-    private final RouteRepository routeRepository;
-    private final StationRepository stationRepository;
+    private final TransportPreferenceRepository preferenceRepository;
     private final UserRepository userRepository;
+    private final RouteRepository routeRepository;
+    private final RouteStationRepository routeStationRepository;
     private final TransportPreferenceMapper mapper;
 
     @Transactional
     public TransportPreferenceResponseDto create(Long currentUserId, TransportPreferenceRequestDto dto) {
-
-        if (transportPreferenceRepository.existsByUser_IdAndDirection(currentUserId, dto.direction())) {
+        if (preferenceRepository.existsByUser_IdAndDirection(currentUserId, dto.direction())) {
             throw new IllegalStateException(
-                    "A transport preference for direction " + dto.direction() + " already exists for this user.");
+                    "You already have a transport preference for direction " + dto.direction() + ". Update it instead.");
         }
 
+        ValidatedStops stops = validateRouteAndStops(dto);
+
         AppUser user = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new EntityNotFoundException("User not found: " + currentUserId));
-        Route route = routeRepository.findById(dto.routeId())
-                .orElseThrow(() -> new EntityNotFoundException("Route not found: " + dto.routeId()));
-        Station station = stationRepository.findById(dto.stationId())
-                .orElseThrow(() -> new EntityNotFoundException("Station not found: " + dto.stationId()));
+                .orElseThrow(() -> new ResourceNotFoundException("User", currentUserId));
 
-        TransportPreference entity = mapper.toEntity(dto, user, route, station);
-        TransportPreference saved = transportPreferenceRepository.save(entity);
-
+        TransportPreference saved = preferenceRepository.save(
+                mapper.toEntity(dto, user, stops.route(), stops.pickup(), stops.dropoff()));
         return mapper.toResponseDto(saved);
     }
 
     @Transactional
-    public TransportPreferenceResponseDto update(Long currentUserId, Long preferenceId, TransportPreferenceRequestDto dto) {
-        TransportPreference existing = transportPreferenceRepository.findById(preferenceId)
-                .orElseThrow(() -> new EntityNotFoundException("Preference not found: " + preferenceId));
+    public TransportPreferenceResponseDto update(Long currentUserId, Long preferenceId,
+                                                 TransportPreferenceRequestDto dto) {
+        TransportPreference existing = findOwned(preferenceId, currentUserId);
 
-        assertOwnership(existing, currentUserId);
+        if (preferenceRepository.existsByUser_IdAndDirectionAndPreferenceIdNot(
+                currentUserId, dto.direction(), preferenceId)) {
+            throw new IllegalStateException(
+                    "You already have another transport preference for direction " + dto.direction() + ".");
+        }
 
-        Route route = routeRepository.findById(dto.routeId())
-                .orElseThrow(() -> new EntityNotFoundException("Route not found: " + dto.routeId()));
-        Station station = stationRepository.findById(dto.stationId())
-                .orElseThrow(() -> new EntityNotFoundException("Station not found: " + dto.stationId()));
+        ValidatedStops stops = validateRouteAndStops(dto);
+        mapper.updateEntity(existing, dto, stops.route(), stops.pickup(), stops.dropoff());
 
-        mapper.updateEntity(existing, dto, route, station);
-
-        return mapper.toResponseDto(existing);
+        return mapper.toResponseDto(preferenceRepository.save(existing));
     }
 
     @Transactional(readOnly = true)
     public List<TransportPreferenceResponseDto> getForUser(Long userId) {
-        return transportPreferenceRepository.findByUser_Id(userId).stream()
+        return preferenceRepository.findByUser_Id(userId).stream()
                 .map(mapper::toResponseDto)
                 .toList();
     }
 
     @Transactional
-    public void delete(Long currentUserId, Long preferenceId) {
-        TransportPreference existing = transportPreferenceRepository.findById(preferenceId)
-                .orElseThrow(() -> new EntityNotFoundException("Preference not found: " + preferenceId));
-
-        assertOwnership(existing, currentUserId);
-
-        transportPreferenceRepository.delete(existing);
-    }
-
-    private void assertOwnership(TransportPreference preference, Long currentUserId) {
-        if (!preference.getUser().getId().equals(currentUserId)) {
-            throw new ForbiddenOperationException("You do not own this transport preference.");
-        }
+    public TransportPreferenceResponseDto toggleActive(Long currentUserId, Long preferenceId) {
+        TransportPreference existing = findOwned(preferenceId, currentUserId);
+        existing.setActive(!existing.getActive());
+        return mapper.toResponseDto(preferenceRepository.save(existing));
     }
 
     @Transactional
-    public TransportPreferenceResponseDto toggleActive(Long currentUserId, Long preferenceId) {
-        TransportPreference existing = transportPreferenceRepository.findById(preferenceId)
-                .orElseThrow(() -> new EntityNotFoundException("Preference not found: " + preferenceId));
+    public void delete(Long currentUserId, Long preferenceId) {
+        TransportPreference existing = findOwned(preferenceId, currentUserId);
+        preferenceRepository.delete(existing);
+    }
 
-        assertOwnership(existing, currentUserId);
+    // ------------------------------------------------------------------ helpers
 
-        existing.setActive(!existing.getActive());
+    private TransportPreference findOwned(Long preferenceId, Long currentUserId) {
+        TransportPreference preference = preferenceRepository.findById(preferenceId)
+                .orElseThrow(() -> new ResourceNotFoundException("Preference", preferenceId));
 
-        return mapper.toResponseDto(existing);
+        if (!preference.getUser().getId().equals(currentUserId)) {
+            throw new ForbiddenOperationException("You do not own this transport preference.");
+        }
+        return preference;
+    }
+
+    private ValidatedStops validateRouteAndStops(TransportPreferenceRequestDto dto) {
+        Route route = routeRepository.findById(dto.routeId())
+                .orElseThrow(() -> new ResourceNotFoundException("Route", dto.routeId()));
+
+        if (route.getStatus() != RouteStatus.ACTIVE) {
+            throw new IllegalStateException("Route " + route.getId() + " is not active.");
+        }
+
+        RouteStation pickup = loadStopOnRoute(dto.pickupRouteStationId(), route, "Pickup");
+        RouteStation dropoff = loadStopOnRoute(dto.dropoffRouteStationId(), route, "Drop-off");
+
+        if (pickup.getStopOrder() >= dropoff.getStopOrder()) {
+            throw new IllegalArgumentException("Pickup stop must come before the drop-off stop on the route.");
+        }
+        return new ValidatedStops(route, pickup, dropoff);
+    }
+
+    private RouteStation loadStopOnRoute(Long routeStationId, Route route, String label) {
+        RouteStation stop = routeStationRepository.findById(routeStationId)
+                .orElseThrow(() -> new ResourceNotFoundException(label + " route station", routeStationId));
+
+        if (!stop.getRoute().getId().equals(route.getId())) {
+            throw new IllegalArgumentException(label + " station does not belong to the selected route.");
+        }
+        return stop;
+    }
+
+    private record ValidatedStops(Route route, RouteStation pickup, RouteStation dropoff) {
     }
 }

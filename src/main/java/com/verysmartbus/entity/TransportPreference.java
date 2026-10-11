@@ -11,7 +11,6 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 
 @Entity
 @Table(
@@ -49,13 +48,21 @@ public class TransportPreference {
     )
     private Route route;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    // Nullable only until legacy rows (single station_id) are cleaned up; the service
+    // always requires both on create/update. Tighten to NOT NULL in a later migration.
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
-            name = "station_id",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "fk_transport_preference_station")
+            name = "pickup_route_station_id",
+            foreignKey = @ForeignKey(name = "fk_transport_preference_pickup_route_station")
     )
-    private Station station;
+    private RouteStation pickupRouteStation;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "dropoff_route_station_id",
+            foreignKey = @ForeignKey(name = "fk_transport_preference_dropoff_route_station")
+    )
+    private RouteStation dropoffRouteStation;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "direction", nullable = false, length = 20)
@@ -72,6 +79,4 @@ public class TransportPreference {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
-
-
 }

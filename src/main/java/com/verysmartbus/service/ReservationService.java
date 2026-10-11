@@ -33,42 +33,7 @@ public class ReservationService {
     private final BusRepository busRepository;
     private final ReservationMapper mapper;
     private final BusMapper busMapper;
-//
-//    @Transactional
-//    public ReservationResponseDto create(Long currentUserId, ReservationRequestDto dto) {
-//
-//        if (reservationRepository.existsByUser_IdAndTrip_Id(currentUserId, dto.tripId())) {
-//            throw new IllegalStateException("You already have a reservation for this trip.");
-//        }
-//
-//        AppUser user = userRepository.findById(currentUserId)
-//                .orElseThrow(() -> new EntityNotFoundException("User not found: " + currentUserId));
-//        Trip trip = tripRepository.findById(dto.tripId())
-//                .orElseThrow(() -> new EntityNotFoundException("Trip not found: " + dto.tripId()));
-//        TripStation pickupTripStation = tripStationRepository.findById(dto.pickupTripStationId())
-//                .orElseThrow(() -> new EntityNotFoundException("Trip station not found: " + dto.pickupTripStationId()));
-//
-//
-//        if (!pickupTripStation.getTrip().getId().equals(trip.getId())) {
-//            throw new IllegalArgumentException("The chosen station does not belong to the selected trip.");
-//        }
-//
-//// number of actual reservation
-//        long activeReservations = reservationRepository.countByTrip_IdAndStatusNot(
-//                trip.getId(), ReservationStatus.CANCELLED);
-//
-//        Bus bus = busRepository.findById(trip.getId())
-//                .orElseThrow(() -> new EntityNotFoundException("Bus not found: " + trip.getId()));
-//        if (activeReservations >= bus.getCapacity()) {
-//            throw new IllegalStateException("This trip is fully booked.");
-//        }
-//
-//        Reservation entity = mapper.toEntity(dto, user, trip, pickupTripStation);
-//        Reservation saved = reservationRepository.save(entity);
-//
-//        return mapper.toResponseDto(saved);
-//    }
-//
+
 
 
     @Transactional

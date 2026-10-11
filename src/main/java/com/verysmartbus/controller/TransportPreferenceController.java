@@ -1,6 +1,5 @@
 package com.verysmartbus.controller;
 
-
 import com.verysmartbus.dto.request.TransportPreferenceRequestDto;
 import com.verysmartbus.dto.response.TransportPreferenceResponseDto;
 import com.verysmartbus.security.AuthenticatedUserResolver;
@@ -24,24 +23,21 @@ public class TransportPreferenceController {
 
     @PostMapping
     public ResponseEntity<TransportPreferenceResponseDto> create(
-            @Valid @RequestBody TransportPreferenceRequestDto dto,
+            @Valid @RequestBody TransportPreferenceRequestDto request,
             Authentication authentication) {
-
         Long currentUserId = userResolver.getCurrentUserId(authentication);
-        TransportPreferenceResponseDto created = transportPreferenceService.create(currentUserId, dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(transportPreferenceService.create(currentUserId, request));
     }
 
     @PutMapping("/{preferenceId}")
     public ResponseEntity<TransportPreferenceResponseDto> update(
             @PathVariable Long preferenceId,
-            @Valid @RequestBody TransportPreferenceRequestDto dto,
+            @Valid @RequestBody TransportPreferenceRequestDto request,
             Authentication authentication) {
-
         Long currentUserId = userResolver.getCurrentUserId(authentication);
-        return ResponseEntity.ok(transportPreferenceService.update(currentUserId, preferenceId, dto));
+        return ResponseEntity.ok(transportPreferenceService.update(currentUserId, preferenceId, request));
     }
-
 
     @GetMapping("/me")
     public ResponseEntity<List<TransportPreferenceResponseDto>> getMine(Authentication authentication) {
@@ -49,23 +45,20 @@ public class TransportPreferenceController {
         return ResponseEntity.ok(transportPreferenceService.getForUser(currentUserId));
     }
 
-    @DeleteMapping("/{preferenceId}")
-    public ResponseEntity<Void> delete(
-            @PathVariable Long preferenceId,
-            Authentication authentication) {
-
-        Long currentUserId = userResolver.getCurrentUserId(authentication);
-        transportPreferenceService.delete(currentUserId, preferenceId);
-        return ResponseEntity.noContent().build();
-    }
-
-    // ضيف الميثود دي في TransportPreferenceController.java
     @PatchMapping("/{preferenceId}/toggle-active")
     public ResponseEntity<TransportPreferenceResponseDto> toggleActive(
             @PathVariable Long preferenceId,
             Authentication authentication) {
-
         Long currentUserId = userResolver.getCurrentUserId(authentication);
         return ResponseEntity.ok(transportPreferenceService.toggleActive(currentUserId, preferenceId));
+    }
+
+    @DeleteMapping("/{preferenceId}")
+    public ResponseEntity<Void> delete(
+            @PathVariable Long preferenceId,
+            Authentication authentication) {
+        Long currentUserId = userResolver.getCurrentUserId(authentication);
+        transportPreferenceService.delete(currentUserId, preferenceId);
+        return ResponseEntity.noContent().build();
     }
 }
