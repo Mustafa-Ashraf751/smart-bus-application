@@ -9,7 +9,6 @@ import com.verysmartbus.entity.enums.TripStatus;
 import com.verysmartbus.exception.ForbiddenOperationException;
 import com.verysmartbus.mapper.BusMapper;
 import com.verysmartbus.mapper.ReservationMapper;
-import com.verysmartbus.repository.BusRepository;
 import com.verysmartbus.repository.ReservationRepository;
 import com.verysmartbus.repository.TripRepository;
 import com.verysmartbus.repository.TripStationRepository;
@@ -30,7 +29,6 @@ public class ReservationService {
     private final TripRepository tripRepository;
     private final TripStationRepository tripStationRepository;
     private final UserRepository userRepository;
-    private final BusRepository busRepository;
     private final ReservationMapper mapper;
     private final BusMapper busMapper;
 //
@@ -98,9 +96,7 @@ public class ReservationService {
     public BusResponseDto getBus(Long tripId) {
         Trip trip = tripRepository.findById(tripId)
                 .orElseThrow(() -> new EntityNotFoundException("Trip not found: " + tripId));
-        Bus bus = busRepository.findById(trip.getId())
-                .orElseThrow(() -> new EntityNotFoundException("Bus not found for trip: " + tripId));
-        return busMapper.toResponseDto(bus);
+        return busMapper.toResponseDto(trip.getBus());
     }
     // dy 3shan el malk el 7a2y2y hoa elly y2der yl3'y bas
     private void assertOwnership(Reservation reservation, Long currentUserId) {

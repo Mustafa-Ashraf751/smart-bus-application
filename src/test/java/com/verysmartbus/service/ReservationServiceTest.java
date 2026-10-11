@@ -11,7 +11,6 @@ import com.verysmartbus.entity.enums.ReservationStatus;
 import com.verysmartbus.entity.enums.TripStatus;
 import com.verysmartbus.mapper.BusMapper;
 import com.verysmartbus.mapper.ReservationMapper;
-import com.verysmartbus.repository.BusRepository;
 import com.verysmartbus.repository.ReservationRepository;
 import com.verysmartbus.repository.TripRepository;
 import com.verysmartbus.repository.TripStationRepository;
@@ -37,7 +36,6 @@ class ReservationServiceTest {
     private final TripRepository tripRepository = mock(TripRepository.class);
     private final TripStationRepository tripStationRepository = mock(TripStationRepository.class);
     private final UserRepository userRepository = mock(UserRepository.class);
-    private final BusRepository busRepository = mock(BusRepository.class);
     private final ReservationMapper reservationMapper = mock(ReservationMapper.class);
     private final BusMapper busMapper = mock(BusMapper.class);
     private ReservationService service;
@@ -55,7 +53,6 @@ class ReservationServiceTest {
                 tripRepository,
                 tripStationRepository,
                 userRepository,
-                busRepository,
                 reservationMapper,
                 busMapper
         );
@@ -96,6 +93,14 @@ class ReservationServiceTest {
         assertThrows(IllegalArgumentException.class,
                 () -> service.create(7L, new ReservationRequestDto(15L, 41L)));
         verify(reservationRepository, never()).save(any());
+    }
+
+    @Test
+    void returnsTheBusAssignedToTheTrip() {
+        // Trip id (15) differs from its bus id (3)
+        service.getBus(15L);
+
+        verify(busMapper).toResponseDto(trip.getBus());
     }
 
     @Test
