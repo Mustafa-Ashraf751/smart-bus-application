@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,6 +24,7 @@ public class TransportPreferenceController {
     private final AuthenticatedUserResolver userResolver;
 
     @PostMapping
+    @PreAuthorize("hasAuthority('BOOK_TRIP')")
     public ResponseEntity<TransportPreferenceResponseDto> create(
             @Valid @RequestBody TransportPreferenceRequestDto dto,
             Authentication authentication) {

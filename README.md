@@ -59,7 +59,7 @@ Example: `V2__add_bus_table.sql`
 ### One-time VPS setup
 1. Install Docker + the Compose plugin and `curl`; create a deploy user in the `docker` group.
 2. Create the deploy directory (default `/opt/verysmartbus`) owned by that user.
-3. Create `/opt/verysmartbus/.env` from [`deploy/.env.example`](deploy/.env.example) and set `POSTGRES_PASSWORD` and `JWT_SECRET`. `POSTGRES_PASSWORD` is only applied when the database volume is first created.
+3. Create `/opt/verysmartbus/.env` from [`deploy/.env.example`](deploy/.env.example) and set `POSTGRES_PASSWORD`, `JWT_SECRET` and `CORS_ALLOWED_ORIGINS` (the frontend URL). `POSTGRES_PASSWORD` is only applied when the database volume is first created.
 4. Add the deploy public key to the user's `~/.ssh/authorized_keys`.
 
 ### GitHub settings (Settings → Secrets and variables → Actions)

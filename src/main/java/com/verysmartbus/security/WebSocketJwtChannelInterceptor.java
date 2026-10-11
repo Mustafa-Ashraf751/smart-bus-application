@@ -18,6 +18,8 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class WebSocketJwtChannelInterceptor implements ChannelInterceptor {
 
+    public static final String APPLICATION_DESTINATION_PREFIX = "/app";
+
     private static final String BEARER_PREFIX = "Bearer ";
     private static final String TRIP_LOCATION_TOPIC_PREFIX = "/topic/trips/";
     private static final String TRIP_LOCATION_TOPIC_SUFFIX = "/location";
@@ -38,6 +40,9 @@ public class WebSocketJwtChannelInterceptor implements ChannelInterceptor {
         }
         if (StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
             authorizeSubscription(accessor);
+        }
+        if (StompCommand.SEND.equals(accessor.getCommand())) {
+            authorizeSend(accessor);
         }
 
         return message;
@@ -69,6 +74,20 @@ public class WebSocketJwtChannelInterceptor implements ChannelInterceptor {
             accessor.setUser(authentication);
         } catch (UsernameNotFoundException exception) {
             throw new AccessDeniedException("WebSocket user no longer exists.");
+        }
+    }
+
+    /**
+     * Only the server publishes to /topic (trip locations). Without this check a client could SEND
+     * straight to /topic/trips/{id}/location and the broker would relay a fake location to every subscriber.
+     */
+    private void authorizeSend(StompHeaderAccessor accessor) {
+        if (!(accessor.getUser() instanceof Authentication)) {
+            throw new AccessDeniedException("WebSocket messages require an authenticated connection.");
+        }
+        String destination = accessor.getDestination();
+        if (destination == null || !destination.startsWith(APPLICATION_DESTINATION_PREFIX + "/")) {
+            throw new AccessDeniedException("Clients can send only to " + APPLICATION_DESTINATION_PREFIX + " destinations.");
         }
     }
 

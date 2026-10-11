@@ -1,7 +1,7 @@
 package com.verysmartbus.config;
 
 import com.verysmartbus.security.WebSocketJwtChannelInterceptor;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.messaging.simp.config.ChannelRegistration;
@@ -11,21 +11,29 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 
 @Configuration
 @EnableWebSocketMessageBroker
-@RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final WebSocketJwtChannelInterceptor webSocketJwtChannelInterceptor;
+    private final String[] allowedOrigins;
+
+    public WebSocketConfig(
+            WebSocketJwtChannelInterceptor webSocketJwtChannelInterceptor,
+            @Value("${app.cors.allowed-origins}") String[] allowedOrigins
+    ) {
+        this.webSocketJwtChannelInterceptor = webSocketJwtChannelInterceptor;
+        this.allowedOrigins = allowedOrigins;
+    }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("http://localhost:*");
+                .setAllowedOriginPatterns(allowedOrigins);
     }
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
         registry.enableSimpleBroker("/topic");
-        registry.setApplicationDestinationPrefixes("/app");
+        registry.setApplicationDestinationPrefixes(WebSocketJwtChannelInterceptor.APPLICATION_DESTINATION_PREFIX);
     }
 
     @Override

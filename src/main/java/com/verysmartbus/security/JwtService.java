@@ -33,11 +33,21 @@ public class JwtService {
         this.expirationMs = expirationMs;
     }
 
-    public String generateToken(Long userId) {
+    /**
+     * The extra claims are for the frontend only (showing the user, choosing screens).
+     * The backend never trusts them: each request reloads the user, roles and permissions by "sub".
+     */
+    public String generateToken(UserPrincipal principal) {
         Instant now = Instant.now();
 
         return Jwts.builder()
-                .subject(userId.toString())
+                .subject(principal.getUserId().toString())
+                .claim("userId", principal.getUserId())
+                .claim("email", principal.getUsername())
+                .claim("name", principal.getName())
+                .claim("phone", principal.getPhone())
+                .claim("roles", principal.getRoleNames())
+                .claim("permissions", principal.getPermissionNames())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plusMillis(expirationMs)))
                 .signWith(signingKey)

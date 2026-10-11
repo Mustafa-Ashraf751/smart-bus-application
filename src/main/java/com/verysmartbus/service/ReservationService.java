@@ -80,12 +80,14 @@ public class ReservationService {
         return mapper.toResponseDto(existing);
     }
     // get all reservation for one user
+    @Transactional(readOnly = true)
     public List<ReservationResponseDto> getForUser(Long userId) {
         return reservationRepository.findByUser_Id(userId).stream()
                 .map(mapper::toResponseDto)
                 .toList();
     }
     // get all trip for one user
+    @Transactional(readOnly = true)
     public List<ReservationResponseDto> getForTrip(Long tripId) {
         return reservationRepository.findByTrip_Id(tripId).stream()
                 .map(mapper::toResponseDto)

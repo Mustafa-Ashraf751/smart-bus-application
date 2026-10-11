@@ -8,54 +8,105 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * Spring Security's representation of one authenticated application user.
  */
 public class UserPrincipal implements UserDetails {
 
+    private static final String ROLE_PREFIX = "ROLE_";
+
     private final Long userId;
     private final String email;
+    private final String name;
+    private final String phone;
+    private final String address;
+    private final UserStatus status;
     private final String passwordHash;
-    private final boolean enabled;
     private final Set<GrantedAuthority> authorities;
+    private final List<String> roleNames;
+    private final List<String> permissionNames;
 
     private UserPrincipal(
             Long userId,
             String email,
+            String name,
+            String phone,
+            String address,
+            UserStatus status,
             String passwordHash,
-            boolean enabled,
-            Set<GrantedAuthority> authorities
+            Set<String> roleNames,
+            Set<String> permissionNames
     ) {
         this.userId = userId;
         this.email = email;
+        this.name = name;
+        this.phone = phone;
+        this.address = address;
+        this.status = status;
         this.passwordHash = passwordHash;
-        this.enabled = enabled;
-        this.authorities = Set.copyOf(authorities);
+        this.roleNames = List.copyOf(roleNames);
+        this.permissionNames = List.copyOf(permissionNames);
+
+        Set<GrantedAuthority> grantedAuthorities = new LinkedHashSet<>();
+        roleNames.forEach(roleName -> grantedAuthorities.add(new SimpleGrantedAuthority(ROLE_PREFIX + roleName)));
+        permissionNames.forEach(permissionName -> grantedAuthorities.add(new SimpleGrantedAuthority(permissionName)));
+        this.authorities = Set.copyOf(grantedAuthorities);
     }
 
     public static UserPrincipal from(AppUser user) {
-        Set<GrantedAuthority> authorities = new LinkedHashSet<>();
+        Set<String> roleNames = new TreeSet<>();
+        Set<String> permissionNames = new TreeSet<>();
 
         user.getRoles().forEach(role -> {
-            authorities.add(new SimpleGrantedAuthority("ROLE_" + role.getName()));
-            role.getPermissions().forEach(permission ->
-                    authorities.add(new SimpleGrantedAuthority(permission.getName()))
-            );
+            roleNames.add(role.getName());
+            role.getPermissions().forEach(permission -> permissionNames.add(permission.getName()));
         });
 
         return new UserPrincipal(
                 user.getId(),
                 user.getEmail(),
+                user.getName(),
+                user.getPhone(),
+                user.getAddress(),
+                user.getStatus(),
                 user.getPasswordHash(),
-                user.getStatus() == UserStatus.ACTIVE,
-                authorities
+                roleNames,
+                permissionNames
         );
     }
 
     public Long getUserId() {
         return userId;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public UserStatus getStatus() {
+        return status;
+    }
+
+    /** Role names without the ROLE_ prefix, e.g. ADMIN, DRIVER. */
+    public List<String> getRoleNames() {
+        return roleNames;
+    }
+
+    /** Permission names granted through the user's roles, e.g. BOOK_TRIP. */
+    public List<String> getPermissionNames() {
+        return permissionNames;
     }
 
     @Override
@@ -75,6 +126,6 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return enabled;
+        return status == UserStatus.ACTIVE;
     }
 }
