@@ -1,0 +1,5 @@
+# Shell scripts and Docker files run on Linux — keep LF endings regardless of core.autocrlf
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
