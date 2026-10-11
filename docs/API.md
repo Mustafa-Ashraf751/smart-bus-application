@@ -659,7 +659,7 @@ These values are controlled by the backend.
 | `409` | User already reserved this trip |
 | `409` | Bus has no available seats |
 | `422` | Trip cannot currently be reserved |
-| `422` | Selected pickup station does not belong to trip |
+| `400` | Selected pickup trip station does not belong to trip |
 
 ---
 
