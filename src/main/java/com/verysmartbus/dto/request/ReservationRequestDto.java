@@ -2,13 +2,12 @@ package com.verysmartbus.dto.request;
 
 import jakarta.validation.constraints.NotNull;
 
-
+/**
+ * Both station ids are IDs from the trip_stations table (not stations, not route_stations).
+ */
 public record ReservationRequestDto(
-
-        @NotNull(message = "tripId is required")
-        Long tripId,
-
-        @NotNull(message = "pickupTripStationId is required")
-        Long pickupTripStationId
+        @NotNull Long tripId,
+        @NotNull Long pickupTripStationId,
+        @NotNull Long dropoffTripStationId
 ) {
 }

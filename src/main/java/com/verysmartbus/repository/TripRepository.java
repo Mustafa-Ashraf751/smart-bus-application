@@ -1,7 +1,11 @@
 package com.verysmartbus.repository;
 
 import com.verysmartbus.entity.Trip;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -15,5 +19,8 @@ public interface TripRepository extends JpaRepository<Trip, Long> {
     boolean existsByRoute_IdAndServiceDate(Long routeId, LocalDate serviceDate);
     Optional<Trip> findFirstByRoute_IdAndScheduledStartTimeBetween(
             Long routeId, LocalDateTime start, LocalDateTime end);
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select t from Trip t where t.id = :id")
+    Optional<Trip> findByIdForUpdate(@Param("id") Long id);
 
 }

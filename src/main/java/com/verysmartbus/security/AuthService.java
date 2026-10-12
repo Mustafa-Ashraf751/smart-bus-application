@@ -1,7 +1,6 @@
 package com.verysmartbus.security;
 
 import com.verysmartbus.dto.request.LoginRequestDto;
-import com.verysmartbus.dto.response.AuthResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;

@@ -1,36 +1,50 @@
 package com.verysmartbus.mapper;
 
-import com.verysmartbus.dto.request.ReservationRequestDto;
 import com.verysmartbus.dto.response.ReservationResponseDto;
 import com.verysmartbus.entity.AppUser;
 import com.verysmartbus.entity.Reservation;
 import com.verysmartbus.entity.Trip;
 import com.verysmartbus.entity.TripStation;
+import com.verysmartbus.entity.enums.ReservationSource;
+import com.verysmartbus.entity.enums.ReservationStatus;
 import org.springframework.stereotype.Component;
-
 
 @Component
 public class ReservationMapper {
 
-    public Reservation toEntity(ReservationRequestDto dto, AppUser user, Trip trip, TripStation pickupTripStation) {
-
+    public Reservation toEntity(AppUser user,
+                                Trip trip,
+                                TripStation pickup,
+                                TripStation dropoff,
+                                ReservationStatus status,
+                                ReservationSource source) {
         return Reservation.builder()
                 .user(user)
                 .trip(trip)
-                .pickupTripStation(pickupTripStation)
+                .pickupTripStation(pickup)
+                .dropoffTripStation(dropoff)
+                .status(status)
+                .source(source)
                 .build();
     }
 
-    public ReservationResponseDto toResponseDto(Reservation entity) {
+    public ReservationResponseDto toResponseDto(Reservation reservation) {
+        TripStation pickup = reservation.getPickupTripStation();
+        TripStation dropoff = reservation.getDropoffTripStation();
+
+        // dropoff is null only for legacy reservations created before drop-off existed.
         return new ReservationResponseDto(
-                entity.getReservationId(),
-                entity.getUser().getId(),
-                entity.getTrip().getId(),
-                entity.getPickupTripStation().getId(),
-                entity.getPickupTripStation().getStation().getName(),
-                entity.getStatus(),
-                entity.getReservedAt(),
-                entity.getCancelledAt()
+                reservation.getReservationId(),
+                reservation.getUser().getId(),
+                reservation.getTrip().getId(),
+                pickup.getId(),
+                pickup.getStation().getName(),
+                dropoff == null ? null : dropoff.getId(),
+                dropoff == null ? null : dropoff.getStation().getName(),
+                reservation.getStatus(),
+                reservation.getSource(),
+                reservation.getReservedAt(),
+                reservation.getCancelledAt()
         );
     }
 }
