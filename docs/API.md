@@ -229,30 +229,47 @@ Not required.
 {
   "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
   "tokenType": "Bearer",
+  "expiresInSeconds": 86400,
   "user": {
     "userId": 10,
     "name": "Toka Mohamed",
     "email": "employee@company.com",
     "phone": "01000000000",
+    "address": "6th of October",
     "status": "ACTIVE",
     "roles": [
       "EMPLOYEE"
     ],
     "permissions": [
-      "TRIP_VIEW",
-      "RESERVATION_CREATE"
+      "BOOK_TRIP"
     ]
   }
 }
 ```
+
+### Access Token Claims
+
+The token is a signed JWT (HS256). Its payload can be decoded by the frontend (e.g. with `jwt-decode`) to show the user and pick screens without an extra request:
+
+| Claim | Example | Meaning |
+|---|---|---|
+| `sub` | `"10"` | User ID (string) |
+| `userId` | `10` | User ID (number) |
+| `email` | `"employee@company.com"` | Login email |
+| `name` | `"Toka Mohamed"` | Display name |
+| `phone` | `"01000000000"` | Phone (omitted when empty) |
+| `roles` | `["EMPLOYEE"]` | `ADMIN`, `BUS_ADMIN`, `DRIVER`, `EMPLOYEE` |
+| `permissions` | `["BOOK_TRIP"]` | Permissions granted through the roles |
+| `iat` / `exp` | `1791700000` | Issued at / expires at (Unix seconds) |
+
+Claims are for display only. The backend reloads the user, roles and permissions from the database on every request, so a role change or deactivation takes effect immediately even though an older token still lists the old values. Use `GET /auth/me` to refresh them.
 
 ### Possible Errors
 
 | Status | Reason |
 |---|---|
 | `400` | Missing login fields |
-| `401` | Invalid email or password |
-| `403` | User account is inactive |
+| `401` | Invalid email or password, or the account is inactive (same message, so the response never reveals which emails exist) |
 
 ---
 
@@ -286,8 +303,7 @@ Required.
     "EMPLOYEE"
   ],
   "permissions": [
-    "TRIP_VIEW",
-    "RESERVATION_CREATE"
+    "BOOK_TRIP"
   ]
 }
 ```
@@ -659,7 +675,7 @@ These values are controlled by the backend.
 | `409` | User already reserved this trip |
 | `409` | Bus has no available seats |
 | `422` | Trip cannot currently be reserved |
-| `422` | Selected pickup station does not belong to trip |
+| `400` | Selected pickup trip station does not belong to trip |
 
 ---
 

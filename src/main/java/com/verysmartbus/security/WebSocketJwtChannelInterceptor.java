@@ -18,9 +18,12 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class WebSocketJwtChannelInterceptor implements ChannelInterceptor {
 
+    public static final String APPLICATION_DESTINATION_PREFIX = "/app";
+
     private static final String BEARER_PREFIX = "Bearer ";
     private static final String TRIP_LOCATION_TOPIC_PREFIX = "/topic/trips/";
     private static final String TRIP_LOCATION_TOPIC_SUFFIX = "/location";
+    private static final String USER_NOTIFICATION_DESTINATION = "/user/queue/notifications";
 
     private final JwtService jwtService;
     private final CustomUserDetailsService userDetailsService;
@@ -38,6 +41,9 @@ public class WebSocketJwtChannelInterceptor implements ChannelInterceptor {
         }
         if (StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
             authorizeSubscription(accessor);
+        }
+        if (StompCommand.SEND.equals(accessor.getCommand())) {
+            authorizeSend(accessor);
         }
 
         return message;
@@ -72,8 +78,28 @@ public class WebSocketJwtChannelInterceptor implements ChannelInterceptor {
         }
     }
 
+    /**
+     * Only the server publishes to /topic (trip locations). Without this check a client could SEND
+     * straight to /topic/trips/{id}/location and the broker would relay a fake location to every subscriber.
+     */
+    private void authorizeSend(StompHeaderAccessor accessor) {
+        if (!(accessor.getUser() instanceof Authentication)) {
+            throw new AccessDeniedException("WebSocket messages require an authenticated connection.");
+        }
+        String destination = accessor.getDestination();
+        if (destination == null || !destination.startsWith(APPLICATION_DESTINATION_PREFIX + "/")) {
+            throw new AccessDeniedException("Clients can send only to " + APPLICATION_DESTINATION_PREFIX + " destinations.");
+        }
+    }
+
     private void authorizeSubscription(StompHeaderAccessor accessor) {
         String destination = accessor.getDestination();
+        if (USER_NOTIFICATION_DESTINATION.equals(destination)) {
+            if (!(accessor.getUser() instanceof Authentication)) {
+                throw new AccessDeniedException("Notification subscriptions require an authenticated user.");
+            }
+            return;
+        }
         if (destination == null
                 || !destination.startsWith(TRIP_LOCATION_TOPIC_PREFIX)
                 || !destination.endsWith(TRIP_LOCATION_TOPIC_SUFFIX)) {

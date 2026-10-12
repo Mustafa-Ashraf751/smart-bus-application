@@ -24,7 +24,7 @@ public interface UserRepository extends JpaRepository<AppUser, Long> {
             from AppUser appUser
             left join fetch appUser.roles appRole
             left join fetch appRole.permissions
-            where appUser.email = :email
+            where lower(appUser.email) = lower(:email)
             """)
     Optional<AppUser> findByEmailWithRolesAndPermissions(@Param("email") String email);
 

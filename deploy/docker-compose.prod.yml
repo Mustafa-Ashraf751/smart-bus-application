@@ -1,0 +1,73 @@
+# Production stack on the VPS. Copied to $DEPLOY_PATH by the deploy workflow.
+# Secrets (POSTGRES_PASSWORD, JWT_SECRET, ...) live in $DEPLOY_PATH/.env on the VPS only.
+# Memory settings are sized for a 2 GB / 2 vCPU server running both containers.
+services:
+  db:
+    # PostGIS is required by the migrations (V13__enable_postgis.sql)
+    image: postgis/postgis:17-3.5
+    container_name: verysmartbus-db
+    restart: unless-stopped
+    command:
+      - postgres
+      - -c
+      - shared_buffers=256MB
+      - -c
+      - effective_cache_size=768MB
+      - -c
+      - work_mem=8MB
+      - -c
+      - maintenance_work_mem=64MB
+      - -c
+      - max_connections=50
+    shm_size: 256mb
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-smart_bus_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required in .env}
+      TZ: UTC
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Replaces the image's init scripts so PostGIS lands in the "extensions" schema
+      - ./initdb:/docker-entrypoint-initdb.d:ro
+    # Only reachable from the VPS itself (e.g. through an SSH tunnel), never from the internet
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  app:
+    image: ${APP_IMAGE:?APP_IMAGE is required}
+    container_name: verysmartbus-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      TZ: UTC
+      # Cap the heap so Postgres keeps enough memory (overrides MaxRAMPercentage from the Dockerfile)
+      JAVA_TOOL_OPTIONS: -Xmx512m
+      # Override the Supabase datasource from application.yml.
+      # currentSchema adds the "extensions" schema (where PostGIS lives) to the search path, as on Supabase.
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-smart_bus_db}?currentSchema=public,extensions
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+volumes:
+  postgres_data:
