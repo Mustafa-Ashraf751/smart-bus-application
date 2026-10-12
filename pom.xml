@@ -189,6 +189,29 @@
                 </configuration>
             </plugin>
 
+
+            <!-- Flyway Maven Plugin -->
+            <plugin>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-maven-plugin</artifactId>
+                <version>10.10.0</version>
+
+                <configuration>
+                    <url>jdbc:postgresql://aws-1-eu-west-1.pooler.supabase.com:5432/postgres</url>
+                    <user>postgres.dunhgmpegsmvwdakrvkw</user>
+                    <password>2J6o5uBwYKaCzkZA</password>
+
+                    <schemas>
+                        <schema>public</schema>
+                    </schemas>
+
+                    <locations>
+                        <location>filesystem:src/main/resources/db/migration</location>
+                    </locations>
+                </configuration>
+            </plugin>
+
+
             <!-- Lombok + MapStruct annotation processors -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

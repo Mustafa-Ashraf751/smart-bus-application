@@ -1,6 +1,8 @@
 package com.verysmartbus.controller;
 
 import com.verysmartbus.dto.request.LoginRequestDto;
+import com.verysmartbus.dto.response.AuthResponseDto;
+import com.verysmartbus.dto.response.AuthUserDto;
 import com.verysmartbus.security.AuthService;
 import com.verysmartbus.security.UserPrincipal;
 import jakarta.validation.Valid;
