@@ -63,6 +63,38 @@ class AuthSecurityIntegrationTest {
     }
 
     @Test
+    void publicRegistrationCreatesOnlyAnEmployeeAndReturnsAnAuthenticatedSession() throws Exception {
+        String email = "new.passenger@verysmartbus.com";
+        String body = mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"New Passenger", "phone":"01012345678", "address":"Zayed",
+                                 "email":"new.passenger@verysmartbus.com", "password":"password123"}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.tokenType").value("Bearer"))
+                .andExpect(jsonPath("$.user.email").value(email))
+                .andExpect(jsonPath("$.user.roles[0]").value("EMPLOYEE"))
+                .andExpect(jsonPath("$.user.permissions[0]").value("BOOK_TRIP"))
+                .andReturn().getResponse().getContentAsString();
+
+        mockMvc.perform(get("/api/auth/me")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + objectMapper.readTree(body).get("accessToken").asText()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value(email));
+    }
+
+    @Test
+    void registrationRejectsAnEmailThatAlreadyExists() throws Exception {
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"Existing", "email":"employee@verysmartbus.com", "password":"password123"}
+                                """))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
     void loginReturnsUserAndTokenCarriesFrontendClaims() throws Exception {
         String body = mockMvc.perform(login("admin@verysmartbus.com", PASSWORD))
                 .andExpect(status().isOk())

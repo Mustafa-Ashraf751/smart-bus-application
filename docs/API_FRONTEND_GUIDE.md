@@ -32,6 +32,25 @@ The response contains `accessToken`, `tokenType`, `expiresInSeconds`, and `user`
 Keep the token according to the frontend security approach and attach it as the
 Bearer token. `user.roles` and `user.permissions` decide which screens/actions to show.
 
+### `POST /api/auth/register` — public
+
+Creates a normal passenger account and immediately returns the same token/user response
+as login. The frontend must never send a role: public registration always assigns only
+the `EMPLOYEE` role, which has `BOOK_TRIP`. Admin, Driver, and Bus Admin roles can be
+assigned only through admin APIs.
+
+```json
+{
+  "name": "Sara Ahmed",
+  "phone": "01000000000",
+  "address": "Sheikh Zayed",
+  "email": "sara@example.com",
+  "password": "secure-password"
+}
+```
+
+Returns `201 Created`. A duplicate email returns `409 Conflict`; password must be 8–72 characters.
+
 ### `GET /api/auth/me` — logged-in user
 
 Returns current user identity, status, roles, and permissions. Call this after app
