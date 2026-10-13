@@ -69,6 +69,28 @@ class TripNotificationServiceTest {
         verifyNoMoreInteractions(notificationService);
     }
 
+    @Test
+    void pickupArrivalNotifiesOnlyConfirmedPassengersWaitingAtThatStation() {
+        Trip trip = trip();
+        Station pickupStation = Station.builder().id(9L).name("Central Station").build();
+        TripStation pickup = TripStation.builder().id(21L).trip(trip).station(pickupStation).build();
+        Reservation confirmedAtPickup = reservation(101L, 11L, trip, ReservationStatus.RESERVED);
+        confirmedAtPickup.setPickupTripStation(pickup);
+        Reservation waitlistedAtPickup = reservation(102L, 12L, trip, ReservationStatus.WAITLISTED);
+        waitlistedAtPickup.setPickupTripStation(pickup);
+        when(reservationRepository.findByTrip_IdAndStatusNotOrderByReservedAtAscReservationIdAsc(
+                50L, ReservationStatus.CANCELLED)).thenReturn(List.of(confirmedAtPickup, waitlistedAtPickup));
+
+        service.busArrivedAtPickup(trip, pickupStation);
+
+        verify(notificationService).createForUser(
+                eq(11L), eq(NotificationType.BUS_ARRIVED_AT_PICKUP),
+                eq("Bus arrived at your pickup station"), contains("Central Station"),
+                eq("{\"tripId\":50,\"stationId\":9}"),
+                eq("trip:50:pickup-arrival:station:9:user:11"));
+        verifyNoMoreInteractions(notificationService);
+    }
+
     private Trip trip() {
         return Trip.builder()
                 .id(50L)

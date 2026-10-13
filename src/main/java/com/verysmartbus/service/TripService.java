@@ -229,6 +229,7 @@ public class TripService {
                     .build();
         }
 
+        boolean wasArrivalConfirmed = presence.isArrivalConfirmed();
         int nextInsideCount = Math.min(
                 presence.getConsecutiveInsideCount() + 1,
                 ARRIVAL_CONFIRMATION_REQUIRED_UPDATES
@@ -237,7 +238,11 @@ public class TripService {
         presence.setArrivalConfirmed(nextInsideCount >= ARRIVAL_CONFIRMATION_REQUIRED_UPDATES);
         presence.setLastObservedAt(observedAt);
 
-        return tripStationPresenceRepository.save(presence);
+        TripStationPresence savedPresence = tripStationPresenceRepository.save(presence);
+        if (!wasArrivalConfirmed && savedPresence.isArrivalConfirmed()) {
+            tripNotificationService.busArrivedAtPickup(trip, station);
+        }
+        return savedPresence;
     }
 
     private void resetPresence(TripStationPresence presence, OffsetDateTime observedAt) {

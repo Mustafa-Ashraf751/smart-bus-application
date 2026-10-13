@@ -1,6 +1,7 @@
 package com.verysmartbus.service;
 
 import com.verysmartbus.entity.Reservation;
+import com.verysmartbus.entity.Station;
 import com.verysmartbus.entity.Trip;
 import com.verysmartbus.entity.TripStation;
 import com.verysmartbus.entity.enums.NotificationType;
@@ -98,6 +99,27 @@ public class TripNotificationService {
                         "Expected time at " + tripStation.getStation().getName() + " is now " + time + ".",
                         stationPayload(tripStation),
                         "trip-station:" + tripStation.getId() + ":time:" + time
+                                + ":user:" + reservation.getUser().getId()
+                ));
+    }
+
+    /**
+     * Sent after the location service confirms the bus is inside a pickup polygon twice in a row.
+     * Only confirmed passengers waiting at that pickup station need this arrival alert.
+     */
+    public void busArrivedAtPickup(Trip trip, Station station) {
+        reservationRepository.findByTrip_IdAndStatusNotOrderByReservedAtAscReservationIdAsc(
+                        trip.getId(), ReservationStatus.CANCELLED)
+                .stream()
+                .filter(reservation -> reservation.getStatus() == ReservationStatus.RESERVED)
+                .filter(reservation -> reservation.getPickupTripStation().getStation().getId().equals(station.getId()))
+                .forEach(reservation -> notificationService.createForUser(
+                        reservation.getUser().getId(),
+                        NotificationType.BUS_ARRIVED_AT_PICKUP,
+                        "Bus arrived at your pickup station",
+                        "The bus for " + tripLabel(trip) + " has arrived at " + station.getName() + ".",
+                        "{\"tripId\":" + trip.getId() + ",\"stationId\":" + station.getId() + "}",
+                        "trip:" + trip.getId() + ":pickup-arrival:station:" + station.getId()
                                 + ":user:" + reservation.getUser().getId()
                 ));
     }
