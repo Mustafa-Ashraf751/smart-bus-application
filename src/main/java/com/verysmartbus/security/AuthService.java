@@ -4,8 +4,10 @@ import com.verysmartbus.dto.request.LoginRequestDto;
 import com.verysmartbus.dto.request.RegisterRequestDto;
 import com.verysmartbus.dto.response.AuthResponseDto;
 import com.verysmartbus.dto.response.AuthUserDto;
+import com.verysmartbus.dto.response.RegistrationResponseDto;
 import com.verysmartbus.entity.AppUser;
 import com.verysmartbus.entity.Role;
+import com.verysmartbus.entity.enums.UserStatus;
 import com.verysmartbus.repository.RoleRepository;
 import com.verysmartbus.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -49,7 +51,7 @@ public class AuthService {
      * an admin responsibility, so a caller can never self-register as ADMIN, DRIVER or BUS_ADMIN.
      */
     @Transactional
-    public AuthResponseDto register(RegisterRequestDto dto) {
+    public RegistrationResponseDto register(RegisterRequestDto dto) {
         if (userRepository.existsByEmail(dto.email())) {
             throw new IllegalStateException("Email already registered.");
         }
@@ -63,18 +65,14 @@ public class AuthService {
                 .address(dto.address())
                 .email(dto.email())
                 .passwordHash(passwordEncoder.encode(dto.password()))
+                .status(UserStatus.PENDING)
                 .build();
         user.getRoles().add(passengerRole);
 
         AppUser saved = userRepository.save(user);
-        UserPrincipal principal = UserPrincipal.from(saved);
-        String accessToken = jwtService.generateToken(principal);
-
-        return new AuthResponseDto(
-                accessToken,
-                "Bearer",
-                jwtService.getExpirationSeconds(),
-                AuthUserDto.from(principal)
+        return new RegistrationResponseDto(
+                saved.getId(), saved.getEmail(), saved.getStatus(),
+                "Registration received. An administrator must approve your account before you can log in."
         );
     }
 }

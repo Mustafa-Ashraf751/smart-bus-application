@@ -63,7 +63,7 @@ class AuthSecurityIntegrationTest {
     }
 
     @Test
-    void publicRegistrationCreatesOnlyAnEmployeeAndReturnsAnAuthenticatedSession() throws Exception {
+    void publicRegistrationCreatesPendingEmployeeWhoCanLogInOnlyAfterAdminApproval() throws Exception {
         String email = "new.passenger@verysmartbus.com";
         String body = mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -72,16 +72,25 @@ class AuthSecurityIntegrationTest {
                                  "email":"new.passenger@verysmartbus.com", "password":"password123"}
                                 """))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.tokenType").value("Bearer"))
-                .andExpect(jsonPath("$.user.email").value(email))
-                .andExpect(jsonPath("$.user.roles[0]").value("EMPLOYEE"))
-                .andExpect(jsonPath("$.user.permissions[0]").value("BOOK_TRIP"))
+                .andExpect(jsonPath("$.email").value(email))
+                .andExpect(jsonPath("$.status").value("PENDING"))
                 .andReturn().getResponse().getContentAsString();
 
-        mockMvc.perform(get("/api/auth/me")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + objectMapper.readTree(body).get("accessToken").asText()))
+        long userId = objectMapper.readTree(body).get("userId").asLong();
+
+        mockMvc.perform(login(email, PASSWORD))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch(
+                        "/api/admin/users/{userId}/approve", userId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer("admin@verysmartbus.com")))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.email").value(email));
+                .andExpect(jsonPath("$.status").value("ACTIVE"));
+
+        mockMvc.perform(login(email, PASSWORD))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.user.roles[0]").value("EMPLOYEE"))
+                .andExpect(jsonPath("$.user.permissions[0]").value("BOOK_TRIP"));
     }
 
     @Test
@@ -92,6 +101,29 @@ class AuthSecurityIntegrationTest {
                                 {"name":"Existing", "email":"employee@verysmartbus.com", "password":"password123"}
                                 """))
                 .andExpect(status().isConflict());
+    }
+
+    @Test
+    void adminCanRejectAPendingRegistrationAndRejectedUserCannotLogIn() throws Exception {
+        String email = "rejected.passenger@verysmartbus.com";
+        String body = mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"Rejected Passenger", "email":"rejected.passenger@verysmartbus.com",
+                                 "password":"password123"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+
+        long userId = objectMapper.readTree(body).get("userId").asLong();
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch(
+                        "/api/admin/users/{userId}/reject", userId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer("admin@verysmartbus.com")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("INACTIVE"));
+
+        mockMvc.perform(login(email, PASSWORD))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

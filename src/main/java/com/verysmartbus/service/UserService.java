@@ -85,9 +85,31 @@ public class UserService {
         return mapper.toResponseDto(user);
     }
 
+    /** Approves a public registration. Admin-created users are already ACTIVE. */
+    @Transactional
+    public UserResponseDto approve(Long userId) {
+        AppUser user = findOrThrow(userId);
+        if (user.getStatus() != UserStatus.PENDING) {
+            throw new IllegalStateException("Only pending registrations can be approved.");
+        }
+        user.setStatus(UserStatus.ACTIVE);
+        return mapper.toResponseDto(user);
+    }
+
     @Transactional
     public UserResponseDto deactivate(Long userId) {
         AppUser user = findOrThrow(userId);
+        user.setStatus(UserStatus.INACTIVE);
+        return mapper.toResponseDto(user);
+    }
+
+    /** Rejecting a registration disables it; it remains visible for an audit trail. */
+    @Transactional
+    public UserResponseDto reject(Long userId) {
+        AppUser user = findOrThrow(userId);
+        if (user.getStatus() != UserStatus.PENDING) {
+            throw new IllegalStateException("Only pending registrations can be rejected.");
+        }
         user.setStatus(UserStatus.INACTIVE);
         return mapper.toResponseDto(user);
     }

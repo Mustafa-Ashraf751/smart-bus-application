@@ -4,6 +4,7 @@ import com.verysmartbus.dto.request.LoginRequestDto;
 import com.verysmartbus.dto.request.RegisterRequestDto;
 import com.verysmartbus.dto.response.AuthResponseDto;
 import com.verysmartbus.dto.response.AuthUserDto;
+import com.verysmartbus.dto.response.RegistrationResponseDto;
 import com.verysmartbus.security.AuthService;
 import com.verysmartbus.security.UserPrincipal;
 import jakarta.validation.Valid;
@@ -30,7 +31,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<AuthResponseDto> register(@Valid @RequestBody RegisterRequestDto dto) {
+    public ResponseEntity<RegistrationResponseDto> register(@Valid @RequestBody RegisterRequestDto dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(dto));
     }
 

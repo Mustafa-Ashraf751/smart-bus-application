@@ -34,10 +34,9 @@ Bearer token. `user.roles` and `user.permissions` decide which screens/actions t
 
 ### `POST /api/auth/register` — public
 
-Creates a normal passenger account and immediately returns the same token/user response
-as login. The frontend must never send a role: public registration always assigns only
-the `EMPLOYEE` role, which has `BOOK_TRIP`. Admin, Driver, and Bus Admin roles can be
-assigned only through admin APIs.
+Creates a normal passenger account with `PENDING` status. The frontend must never send
+a role: public registration always assigns only the `EMPLOYEE` role, which has
+`BOOK_TRIP`. Admin, Driver, and Bus Admin roles can be assigned only through admin APIs.
 
 ```json
 {
@@ -49,7 +48,9 @@ assigned only through admin APIs.
 }
 ```
 
-Returns `201 Created`. A duplicate email returns `409 Conflict`; password must be 8–72 characters.
+Returns `201 Created` with its ID, email, `PENDING` status, and approval message—**not a
+JWT**. Show a “waiting for admin approval” screen. A pending or rejected account cannot
+log in. A duplicate email returns `409 Conflict`; password must be 8–72 characters.
 
 ### `GET /api/auth/me` — logged-in user
 
@@ -216,7 +217,7 @@ Every `/api/admin/**` endpoint requires `ADMIN`.
 
 | Resource | Endpoints |
 |---|---|
-| Users | `POST/GET /api/admin/users`, `GET/PUT /api/admin/users/{userId}`, `PATCH /{userId}/activate`, `PATCH /{userId}/deactivate`, `PUT/DELETE /{userId}/roles/{roleId}` |
+| Users | `POST/GET /api/admin/users`, `GET/PUT /api/admin/users/{userId}`, `PATCH /{userId}/approve`, `PATCH /{userId}/reject`, `PATCH /{userId}/activate`, `PATCH /{userId}/deactivate`, `PUT/DELETE /{userId}/roles/{roleId}` |
 | Roles | `POST/GET /api/admin/roles`, `GET/PUT/DELETE /api/admin/roles/{roleId}`, `PUT/DELETE /{roleId}/permissions/{permissionId}` |
 | Permissions | `POST/GET /api/admin/permissions`, `GET/PUT/DELETE /api/admin/permissions/{permissionId}` |
 | Buses | `POST/GET /api/admin/buses`, `GET/PUT /api/admin/buses/{id}`, `PATCH /{id}/activate`, `PATCH /{id}/deactivate` |
@@ -287,6 +288,7 @@ after the database transaction commits. Keep a REST fallback: on reconnect, call
 ## 8. Recommended screen flows
 
 1. **App launch:** restore token, call `/api/auth/me`, render screens based on roles.
+   A newly registered user has no token until an admin approves them.
 2. **Passenger home:** call `/api/trips/today`, `/api/reservations/me`, and
    `/api/notifications/me`; subscribe to notification queue and selected trip location.
 3. **Passenger preference form:** load routes and route stations, submit IDs to

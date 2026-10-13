@@ -39,9 +39,17 @@ public class UserController {
     public UserResponseDto activate(@PathVariable Long userId) {
         return userService.activate(userId);
     }
+    @PatchMapping("/{userId}/approve")
+    public UserResponseDto approve(@PathVariable Long userId) {
+        return userService.approve(userId);
+    }
     @PatchMapping("/{userId}/deactivate")
     public UserResponseDto deactivate(@PathVariable Long userId) {
         return userService.deactivate(userId);
+    }
+    @PatchMapping("/{userId}/reject")
+    public UserResponseDto reject(@PathVariable Long userId) {
+        return userService.reject(userId);
     }
     @PutMapping("/{userId}/roles/{roleId}")
     public UserResponseDto assignRole(@PathVariable Long userId,
