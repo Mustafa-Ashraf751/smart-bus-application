@@ -33,6 +33,10 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
     validate-on-migrate: true
+    # Branches are merged in any order, so a lower-numbered migration can arrive after a higher one
+    # was already applied (e.g. V28/V29 merged after V30 was deployed). Apply it instead of failing.
+    # Migrations from parallel branches must therefore not depend on each other.
+    out-of-order: true
 
 # ─── Server ────────────────────────────────────────────────
 server:
