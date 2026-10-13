@@ -4,6 +4,7 @@ import com.verysmartbus.dto.request.ReservationRequestDto;
 import com.verysmartbus.dto.response.BusResponseDto;
 import com.verysmartbus.dto.response.ReservationResponseDto;
 import com.verysmartbus.security.AuthenticatedUserResolver;
+import com.verysmartbus.service.DailyTripService;
 import com.verysmartbus.service.ReservationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ import java.util.List;
 public class ReservationController {
 
     private final ReservationService reservationService;
+    private final DailyTripService dailyTripService;
     private final AuthenticatedUserResolver userResolver;
 
     @PostMapping
@@ -43,9 +45,11 @@ public class ReservationController {
         return ResponseEntity.ok(reservationService.cancel(currentUserId, reservationId));
     }
 
+    /** Opening "my reservations" is an app open too: today's trips and preference reservations appear first. */
     @GetMapping("/me")
     public ResponseEntity<List<ReservationResponseDto>> getMine(Authentication authentication) {
         Long currentUserId = userResolver.getCurrentUserId(authentication);
+        dailyTripService.ensureTodayTrips();
         return ResponseEntity.ok(reservationService.getForUser(currentUserId));
     }
 

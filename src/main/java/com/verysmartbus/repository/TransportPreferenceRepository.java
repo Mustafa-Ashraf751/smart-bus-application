@@ -13,4 +13,7 @@ public interface TransportPreferenceRepository extends JpaRepository<TransportPr
     boolean existsByUser_IdAndDirection(Long userId, Direction direction);
 
     boolean existsByUser_IdAndDirectionAndPreferenceIdNot(Long userId, Direction direction, Long preferenceId);
+
+    /** Active preferences of a route, oldest first: the order in which seats are handed out. */
+    List<TransportPreference> findByRoute_IdAndActiveTrueOrderByCreatedAtAscPreferenceIdAsc(Long routeId);
 }
