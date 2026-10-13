@@ -19,6 +19,7 @@ import com.verysmartbus.mapper.LocationMapper;
 import com.verysmartbus.mapper.TripStationMapper;
 import com.verysmartbus.repository.RouteRepository;
 import com.verysmartbus.repository.RouteStationRepository;
+import com.verysmartbus.repository.ReservationRepository;
 import com.verysmartbus.repository.StationRepository;
 import com.verysmartbus.repository.TripRepository;
 import com.verysmartbus.repository.TripStationRepository;
@@ -53,11 +54,13 @@ public class TripService {
     private final StationRepository stationRepository;
     private final TripStationRepository tripStationRepository;
     private final TripStationPresenceRepository tripStationPresenceRepository;
+    private final ReservationRepository reservationRepository;
     private final LocationFreshnessService locationFreshnessService;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final TripMapper mapper;
     private final TripStationMapper tripStationMapper;
     private final LocationMapper locationMapper;
+    private final TripNotificationService tripNotificationService;
 
     public List<TripResponseDto> findAll() {
         return tripRepository.findAll().stream()
@@ -118,13 +121,11 @@ public class TripService {
     @Transactional
     public TripLocationResponseDto updateCurrentLocation(
             Long tripId,
-            Long authenticatedDriverId,
+            Long authenticatedUserId,
             DriverLocationUpdateRequestDto dto
     ) {
         Trip trip = findEntityById(tripId);
-        if (!trip.getDriver().getId().equals(authenticatedDriverId)) {
-            throw new ForbiddenOperationException("You can update only your own assigned trip.");
-        }
+        assertCanOperateTrip(trip, authenticatedUserId);
         if (trip.getStatus() != TripStatus.IN_PROGRESS) {
             throw new IllegalStateException("Location can be updated only while a trip is in progress.");
         }
@@ -173,6 +174,7 @@ public class TripService {
 
         trip.setStatus(TripStatus.IN_PROGRESS);
         trip.setActualStartTime(OffsetDateTime.now(ZoneOffset.UTC));
+        tripNotificationService.tripStarted(trip);
         return mapper.toResponseDto(trip);
     }
 
@@ -258,14 +260,11 @@ public class TripService {
     }
 
     @Transactional
-    public TripResponseDto startTrip(Long currentDriverId, Long tripId) {
+    public TripResponseDto startTrip(Long currentUserId, Long tripId) {
         Trip trip = tripRepository.findById(tripId)
                 .orElseThrow(() -> new EntityNotFoundException("Trip not found: " + tripId));
 
-        // تأكد إن السائق ده فعلاً سائق الرحلة دي، مش أي سائق تاني
-        if (!trip.getDriver().getId().equals(currentDriverId)) {
-            throw new ForbiddenOperationException("You are not the driver assigned to this trip.");
-        }
+        assertCanOperateTrip(trip, currentUserId);
 
         ensureTripRunsToday(trip);
         if (trip.getStatus() == TripStatus.IN_PROGRESS) {
@@ -280,6 +279,7 @@ public class TripService {
 
         trip.setStatus(TripStatus.IN_PROGRESS);
         trip.setActualStartTime(OffsetDateTime.now());
+        tripNotificationService.tripStarted(trip);
 
         return mapper.toResponseDto(tripRepository.save(trip));
     }
@@ -310,6 +310,19 @@ public class TripService {
         if (!trip.getServiceDate().equals(today)) {
             throw new IllegalStateException("This trip can be operated only on its service date: "
                     + trip.getServiceDate() + ".");
+        }
+    }
+
+    /** The assigned driver or a passenger holding a confirmed seat may report the shared trip state. */
+    private void assertCanOperateTrip(Trip trip, Long userId) {
+        if (trip.getDriver().getId().equals(userId)) {
+            return;
+        }
+        boolean hasConfirmedReservation = reservationRepository.existsByUser_IdAndTrip_IdAndStatus(
+                userId, trip.getId(), com.verysmartbus.entity.enums.ReservationStatus.RESERVED);
+        if (!hasConfirmedReservation) {
+            throw new ForbiddenOperationException(
+                    "Only the assigned driver or a passenger with a confirmed reservation can operate this trip.");
         }
     }
 }
