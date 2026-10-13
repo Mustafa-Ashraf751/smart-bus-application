@@ -12,6 +12,11 @@ spring:
   flyway:
     enabled: false   # disable Flyway in tests — Hibernate creates schema instead
 
+app:
+  notifications:
+    outbox:
+      enabled: false # SKIP LOCKED is PostgreSQL-specific; worker tests belong on PostgreSQL.
+
 # Test-only signing key (base64, >= 32 bytes) so tests don't depend on a JWT_SECRET env var
 jwt:
   secret: dGVzdC1vbmx5LWp3dC1zZWNyZXQtZm9yLXZlcnlzbWFydGJ1cy10ZXN0cw==

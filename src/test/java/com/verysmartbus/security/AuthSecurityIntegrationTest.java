@@ -131,10 +131,13 @@ class AuthSecurityIntegrationTest {
 
     @Test
     void bookingRequiresBookTripPermission() throws Exception {
-        mockMvc.perform(post("/api/reservations")
+        mockMvc.perform(post("/api/transport-preferences")
                         .header(HttpHeaders.AUTHORIZATION, bearer("driver@verysmartbus.com"))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"tripId\": 1, \"pickupTripStationId\": 1}"))
+                        .content("""
+                                {"routeId": 1, "pickupRouteStationId": 1,
+                                 "dropoffRouteStationId": 2, "direction": "TO_COMPANY"}
+                                """))
                 .andExpect(status().isForbidden());
     }
 

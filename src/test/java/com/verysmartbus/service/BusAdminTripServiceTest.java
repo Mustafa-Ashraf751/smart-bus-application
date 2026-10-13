@@ -27,6 +27,7 @@ class BusAdminTripServiceTest {
     private final UserRepository userRepository = mock(UserRepository.class);
     private final BusAdminTripAccessAuthorizer accessAuthorizer = mock(BusAdminTripAccessAuthorizer.class);
     private final TripMapper tripMapper = mock(TripMapper.class);
+    private final TripNotificationService tripNotificationService = mock(TripNotificationService.class);
     private BusAdminTripService service;
 
     @BeforeEach
@@ -36,7 +37,8 @@ class BusAdminTripServiceTest {
                 busRepository,
                 userRepository,
                 accessAuthorizer,
-                tripMapper
+                tripMapper,
+                tripNotificationService
         );
     }
 

@@ -31,6 +31,7 @@ public class TripStationService {
     private final ReservationRepository reservationRepository;
     private final BusAdminTripAccessAuthorizer accessAuthorizer;
     private final TripStationMapper mapper;
+    private final TripNotificationService tripNotificationService;
 
     public List<TripStationResponseDto> findAllByTripId(Long busAdminId, Long tripId) {
         accessAuthorizer.findAssignedTrip(busAdminId, tripId);
@@ -70,6 +71,7 @@ public class TripStationService {
         ensureTripCanBeEdited(trip);
         TripStation tripStation = findEntityForTrip(tripId, tripStationId);
         tripStation.setExpectedArrivalTime(dto.expectedArrivalTime());
+        tripNotificationService.tripStationArrivalTimeUpdated(tripStation);
         return mapper.toResponseDto(tripStation);
     }
 

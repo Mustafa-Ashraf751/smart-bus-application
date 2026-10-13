@@ -40,6 +40,7 @@ public class ReservationService {
     private final UserRepository userRepository;
     private final ReservationMapper mapper;
     private final BusMapper busMapper;
+    private final TripNotificationService tripNotificationService;
 
     // ------------------------------------------------------------------ booking
 
@@ -75,6 +76,7 @@ public class ReservationService {
 
         Reservation saved = reservationRepository.save(
                 mapper.toEntity(user, trip, pickup, dropoff, status, ReservationSource.MANUAL));
+        tripNotificationService.reservationCreated(saved);
         return mapper.toResponseDto(saved);
     }
 
@@ -93,11 +95,15 @@ public class ReservationService {
 
         boolean freesASeat = reservation.getStatus() == ReservationStatus.RESERVED;
         reservation.cancel();   // throws if it is already cancelled
+        tripNotificationService.reservationCancelled(reservation);
 
         if (freesASeat) {
             reservationRepository
                     .findFirstByTrip_IdAndStatusOrderByReservedAtAscReservationIdAsc(tripId, ReservationStatus.WAITLISTED)
-                    .ifPresent(Reservation::promote);
+                    .ifPresent(waitlistedReservation -> {
+                        waitlistedReservation.promote();
+                        tripNotificationService.reservationPromoted(waitlistedReservation);
+                    });
         }
 
         return mapper.toResponseDto(reservation);

@@ -36,6 +36,7 @@ public class BusAdminTripService {
     private final UserRepository userRepository;
     private final BusAdminTripAccessAuthorizer accessAuthorizer;
     private final TripMapper tripMapper;
+    private final TripNotificationService tripNotificationService;
 
     public List<TripResponseDto> findMyTrips(Long busAdminId) {
         return tripRepository.findAllByBusAdmin_IdOrderByServiceDateAscScheduledStartTimeAsc(busAdminId)
@@ -90,6 +91,7 @@ public class BusAdminTripService {
 
         trip.setStatus(TripStatus.IN_PROGRESS);
         trip.setActualStartTime(OffsetDateTime.now(ZoneOffset.UTC));
+        tripNotificationService.tripStarted(trip);
         return tripMapper.toResponseDto(trip);
     }
 
