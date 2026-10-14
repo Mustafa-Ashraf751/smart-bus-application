@@ -24,4 +24,15 @@ public interface TripRepository extends JpaRepository<Trip, Long> {
     Optional<Trip> findByIdForUpdate(@Param("id") Long id);
     List<Trip> findByServiceDateOrderByScheduledStartTimeAsc(LocalDate serviceDate);
 
+    @Query("""
+    select t
+    from Trip t
+    join t.route r
+    where t.status = com.verysmartbus.entity.enums.TripStatus.SCHEDULED
+      and t.serviceDate >= :today
+      and r.status = com.verysmartbus.entity.enums.RouteStatus.ACTIVE
+    order by t.serviceDate asc, t.scheduledStartTime asc
+    """)
+    List<Trip> findBookableTrips(@Param("today") LocalDate today);
+
 }

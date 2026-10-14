@@ -1,6 +1,7 @@
 package com.verysmartbus.repository;
 
 import com.verysmartbus.entity.TripStation;
+import com.verysmartbus.entity.enums.TripStationStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -14,9 +15,6 @@ public interface TripStationRepository extends JpaRepository<TripStation, Long> 
     List<TripStation> findAllByTrip_IdOrderByStopOrderAsc(Long tripId);
 
     boolean existsByTrip_IdAndStation_Id(Long tripId, Long stationId);
-
-    boolean existsByTrip_IdAndStopOrder(Long tripId, Integer stopOrder);
-    Optional<TripStation> findByTrip_IdAndStation_Id(Long tripId, Long stationId);
 
     long countByTrip_Id(Long tripId);
 
@@ -66,5 +64,10 @@ public interface TripStationRepository extends JpaRepository<TripStation, Long> 
             @Param("tripId") Long tripId,
             @Param("temporaryStopOrder") Integer temporaryStopOrder,
             @Param("offset") Integer offset
+    );
+
+    List<TripStation> findByTrip_IdInAndStatus(
+            List<Long> tripIds,
+            TripStationStatus status
     );
 }
