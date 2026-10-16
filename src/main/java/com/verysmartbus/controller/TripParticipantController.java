@@ -4,11 +4,13 @@ import com.verysmartbus.dto.request.DriverLocationUpdateRequestDto;
 import com.verysmartbus.dto.response.TripLocationResponseDto;
 import com.verysmartbus.dto.response.TripResponseDto;
 import com.verysmartbus.security.AuthenticatedUserResolver;
+import com.verysmartbus.security.TripLocationAccessAuthorizer;
 import com.verysmartbus.service.TripService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -23,6 +25,17 @@ public class TripParticipantController {
 
     private final TripService tripService;
     private final AuthenticatedUserResolver userResolver;
+    private final TripLocationAccessAuthorizer locationAccessAuthorizer;
+
+    /** Current location is visible only to a participant or authorized operational user. */
+    @GetMapping("/{tripId}/location")
+    public TripLocationResponseDto getCurrentLocation(
+            @PathVariable Long tripId,
+            Authentication authentication
+    ) {
+        locationAccessAuthorizer.authorize(authentication, tripId);
+        return tripService.findCurrentLocation(tripId);
+    }
 
     @PatchMapping("/{tripId}/start")
     public ResponseEntity<TripResponseDto> startTrip(
