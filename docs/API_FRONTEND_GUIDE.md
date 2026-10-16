@@ -99,6 +99,8 @@ Trip is created, active preferences become that day's reservations.
 
 | Method | Endpoint | Purpose |
 |---|---|---|
+| GET | `/api/transport-preferences/routes` | List active fixed routes the passenger may choose for a preference. |
+| GET | `/api/transport-preferences/routes/{routeId}/stations` | List active fixed RouteStations, ordered by stop order, for one chosen route. |
 | POST | `/api/transport-preferences` | Create a preference (`BOOK_TRIP` permission required). |
 | GET | `/api/transport-preferences/me` | List the logged-in passenger's preferences. |
 | PUT | `/api/transport-preferences/{preferenceId}` | Update own preference. |
@@ -117,6 +119,19 @@ Trip is created, active preferences become that day's reservations.
 
 `pickupRouteStationId` and `dropoffRouteStationId` must be route-template station
 IDs, not physical `stationId`s. Valid directions: `TO_COMPANY`, `FROM_COMPANY`.
+
+Preference-form flow:
+
+```text
+GET /api/transport-preferences/routes
+→ passenger chooses a fixed route
+→ GET /api/transport-preferences/routes/{routeId}/stations
+→ passenger chooses pickup and dropoff RouteStations
+→ POST /api/transport-preferences
+```
+
+These endpoints return fixed RouteStation IDs. Do not use `tripStationId` from
+`GET /api/trips/available` here; those are for a one-day manual reservation.
 
 ### Reservations
 

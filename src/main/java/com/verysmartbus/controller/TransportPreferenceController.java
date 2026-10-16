@@ -2,6 +2,8 @@ package com.verysmartbus.controller;
 
 import com.verysmartbus.dto.request.TransportPreferenceRequestDto;
 import com.verysmartbus.dto.response.TransportPreferenceResponseDto;
+import com.verysmartbus.dto.response.RouteResponseDto;
+import com.verysmartbus.dto.response.RouteStationResponseDto;
 import com.verysmartbus.security.AuthenticatedUserResolver;
 import com.verysmartbus.service.TransportPreferenceService;
 import jakarta.validation.Valid;
@@ -21,6 +23,19 @@ public class TransportPreferenceController {
 
     private final TransportPreferenceService transportPreferenceService;
     private final AuthenticatedUserResolver userResolver;
+
+    /** Active fixed routes shown only while the passenger is choosing a preference. */
+    @GetMapping("/routes")
+    public ResponseEntity<List<RouteResponseDto>> getRoutesForPreference() {
+        return ResponseEntity.ok(transportPreferenceService.getActiveRoutesForPreference());
+    }
+
+    /** Fixed selectable stops for one active route; IDs returned here are RouteStation IDs. */
+    @GetMapping("/routes/{routeId}/stations")
+    public ResponseEntity<List<RouteStationResponseDto>> getRouteStationsForPreference(
+            @PathVariable Long routeId) {
+        return ResponseEntity.ok(transportPreferenceService.getActiveRouteStationsForPreference(routeId));
+    }
 
     @PostMapping
     @PreAuthorize("hasAuthority('BOOK_TRIP')")

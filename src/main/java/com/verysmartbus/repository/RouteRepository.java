@@ -1,6 +1,7 @@
 package com.verysmartbus.repository;
 
 import com.verysmartbus.entity.Route;
+import com.verysmartbus.entity.enums.RouteStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -9,6 +10,10 @@ import java.time.LocalDate;
 import java.util.List;
 
 public interface RouteRepository extends JpaRepository<Route, Long> {
+
+    /** Passenger preference picker: only routes currently available for new preferences. */
+    List<Route> findAllByStatusOrderByNameAsc(RouteStatus status);
+
     @Query("""
             select r.id from Route r
             where r.status = com.verysmartbus.entity.enums.RouteStatus.ACTIVE

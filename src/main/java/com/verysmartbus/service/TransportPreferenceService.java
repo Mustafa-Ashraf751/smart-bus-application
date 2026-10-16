@@ -2,14 +2,19 @@ package com.verysmartbus.service;
 
 import com.verysmartbus.dto.request.TransportPreferenceRequestDto;
 import com.verysmartbus.dto.response.TransportPreferenceResponseDto;
+import com.verysmartbus.dto.response.RouteResponseDto;
+import com.verysmartbus.dto.response.RouteStationResponseDto;
 import com.verysmartbus.entity.AppUser;
 import com.verysmartbus.entity.Route;
 import com.verysmartbus.entity.RouteStation;
 import com.verysmartbus.entity.TransportPreference;
 import com.verysmartbus.entity.enums.RouteStatus;
+import com.verysmartbus.entity.enums.StationStatus;
 import com.verysmartbus.exception.ForbiddenOperationException;
 import com.verysmartbus.exception.ResourceNotFoundException;
 import com.verysmartbus.mapper.TransportPreferenceMapper;
+import com.verysmartbus.mapper.RouteMapper;
+import com.verysmartbus.mapper.RouteStationMapper;
 import com.verysmartbus.repository.RouteRepository;
 import com.verysmartbus.repository.RouteStationRepository;
 import com.verysmartbus.repository.TransportPreferenceRepository;
@@ -29,6 +34,34 @@ public class TransportPreferenceService {
     private final RouteRepository routeRepository;
     private final RouteStationRepository routeStationRepository;
     private final TransportPreferenceMapper mapper;
+    private final RouteMapper routeMapper;
+    private final RouteStationMapper routeStationMapper;
+
+    /** Read-only selection data for the passenger preference form. */
+    @Transactional(readOnly = true)
+    public List<RouteResponseDto> getActiveRoutesForPreference() {
+        return routeRepository.findAllByStatusOrderByNameAsc(RouteStatus.ACTIVE).stream()
+                .map(routeMapper::toResponseDto)
+                .toList();
+    }
+
+    /**
+     * Returns only stops a passenger can select for a new preference: active route and active
+     * physical stations, in the fixed route order.
+     */
+    @Transactional(readOnly = true)
+    public List<RouteStationResponseDto> getActiveRouteStationsForPreference(Long routeId) {
+        Route route = routeRepository.findById(routeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Route", routeId));
+        if (route.getStatus() != RouteStatus.ACTIVE) {
+            throw new IllegalStateException("Route " + routeId + " is not active.");
+        }
+
+        return routeStationRepository.findAllByRoute_IdOrderByStopOrderAsc(routeId).stream()
+                .filter(routeStation -> routeStation.getStation().getStatus() == StationStatus.ACTIVE)
+                .map(routeStationMapper::toResponseDto)
+                .toList();
+    }
 
     @Transactional
     public TransportPreferenceResponseDto create(Long currentUserId, TransportPreferenceRequestDto dto) {
