@@ -2,6 +2,8 @@ package com.verysmartbus.controller;
 
 import com.verysmartbus.dto.request.BusAdminTripBusUpdateRequestDto;
 import com.verysmartbus.dto.request.BusAdminTripDriverUpdateRequestDto;
+import com.verysmartbus.dto.request.LocationUpdateRequestDto;
+import com.verysmartbus.dto.response.TripLocationResponseDto;
 import com.verysmartbus.dto.response.TripResponseDto;
 import com.verysmartbus.security.AuthenticatedUserResolver;
 import com.verysmartbus.service.BusAdminTripService;
@@ -61,5 +63,14 @@ public class BusAdminTripController {
     @PatchMapping("/{tripId}/complete")
     public TripResponseDto complete(@PathVariable Long tripId, Authentication authentication) {
         return busAdminTripService.complete(userResolver.getCurrentUserId(authentication), tripId);
+    }
+
+    @PatchMapping("/{tripId}/location")
+    public TripLocationResponseDto updateCurrentLocation(
+            @PathVariable Long tripId,
+            @Valid @RequestBody LocationUpdateRequestDto request,
+            Authentication authentication) {
+        return busAdminTripService.updateCurrentLocation(
+                userResolver.getCurrentUserId(authentication), tripId, request);
     }
 }

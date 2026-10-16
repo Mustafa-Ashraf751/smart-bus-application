@@ -66,7 +66,7 @@ reload if the frontend needs the latest role/permission state.
 | GET | `/api/trips/today` | Gets today's operational trips. It also lazily creates missing daily trips first. |
 | GET | `/api/trips/{tripId}/location` | Gets current location, freshness flag, and station-presence information. |
 | PATCH | `/api/trips/{tripId}/start` | Starts a trip; only assigned driver or a passenger with a `RESERVED` reservation may do it. |
-| PATCH | `/api/trips/{tripId}/location` | Sends the shared bus location; same authorization rule as start. |
+| PATCH | `/api/trips/{tripId}/location` | Sends the shared bus location; assigned Bus Admin, assigned driver, or a passenger with a `RESERVED` reservation may send it. |
 
 Location request body:
 
@@ -189,6 +189,7 @@ that the trip belongs to that Bus Admin.
 | PATCH | `/api/bus-admin/trips/{tripId}/driver` | Change assigned driver. |
 | PATCH | `/api/bus-admin/trips/{tripId}/start` | Start the trip. |
 | PATCH | `/api/bus-admin/trips/{tripId}/complete` | Complete the trip. |
+| PATCH | `/api/bus-admin/trips/{tripId}/location` | Send the live location for the assigned trip. |
 | GET | `/api/bus-admin/trips/{tripId}/stations` | List actual TripStations. |
 | POST | `/api/bus-admin/trips/{tripId}/stations` | Add a physical station to actual trip. |
 | PATCH | `/api/bus-admin/trips/{tripId}/stations/{tripStationId}/arrival-time` | Change only that actual station's time. |
@@ -214,6 +215,12 @@ Update its time:
 
 ```json
 { "expectedArrivalTime": "13:34:44" }
+```
+
+Location update body:
+
+```json
+{ "latitude": 30.012345, "longitude": 31.123456 }
 ```
 
 RouteStations are the fixed template. TripStations are the actual copy for that

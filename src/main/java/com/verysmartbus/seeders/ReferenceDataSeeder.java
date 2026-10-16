@@ -41,6 +41,7 @@ public class ReferenceDataSeeder {
     private static final Map<String, List<String>> ROLE_PERMISSIONS = Map.of(
             "ADMIN", List.of(), // filled with ALL permissions below
             "DRIVER", List.of("UPDATE_LIVE_LOCATION"),
+            "BUS_ADMIN", List.of("UPDATE_LIVE_LOCATION"),
             "EMPLOYEE", List.of("BOOK_TRIP")
     );
 
@@ -55,6 +56,8 @@ public class ReferenceDataSeeder {
 
         RoleResponseDto admin = roleService.create(new RoleRequestDto("ADMIN", "Full access to manage the system"));
         RoleResponseDto driver = roleService.create(new RoleRequestDto("DRIVER", "Can operate trips and update live location"));
+        RoleResponseDto busAdmin = roleService.create(new RoleRequestDto(
+                "BUS_ADMIN", "Manages assigned daily trips and updates live location"));
         RoleResponseDto employee = roleService.create(new RoleRequestDto("EMPLOYEE", "Regular employee who books bus trips"));
 
         // ADMIN gets every permission.
@@ -63,6 +66,10 @@ public class ReferenceDataSeeder {
         ROLE_PERMISSIONS.get("DRIVER").forEach(permName ->
                 permissionRepository.findByName(permName)
                         .ifPresent(p -> roleService.assignPermission(driver.roleId(), p.getId())));
+
+        ROLE_PERMISSIONS.get("BUS_ADMIN").forEach(permName ->
+                permissionRepository.findByName(permName)
+                        .ifPresent(p -> roleService.assignPermission(busAdmin.roleId(), p.getId())));
 
         ROLE_PERMISSIONS.get("EMPLOYEE").forEach(permName ->
                 permissionRepository.findByName(permName)

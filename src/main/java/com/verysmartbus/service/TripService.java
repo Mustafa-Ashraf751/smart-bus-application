@@ -1,6 +1,6 @@
 package com.verysmartbus.service;
 
-import com.verysmartbus.dto.request.DriverLocationUpdateRequestDto;
+import com.verysmartbus.dto.request.LocationUpdateRequestDto;
 import com.verysmartbus.dto.request.TripRequestDto;
 import com.verysmartbus.dto.response.StationPresenceResponseDto;
 import com.verysmartbus.dto.response.TripLocationResponseDto;
@@ -122,7 +122,7 @@ public class TripService {
     public TripLocationResponseDto updateCurrentLocation(
             Long tripId,
             Long authenticatedUserId,
-            DriverLocationUpdateRequestDto dto
+            LocationUpdateRequestDto dto
     ) {
         Trip trip = findEntityById(tripId);
         assertCanOperateTrip(trip, authenticatedUserId);
@@ -318,8 +318,11 @@ public class TripService {
         }
     }
 
-    /** The assigned driver or a passenger holding a confirmed seat may report the shared trip state. */
+    /** The assigned bus admin/driver or a passenger holding a confirmed seat may report the shared trip state. */
     private void assertCanOperateTrip(Trip trip, Long userId) {
+        if (trip.getBusAdmin() != null && trip.getBusAdmin().getId().equals(userId)) {
+            return;
+        }
         if (trip.getDriver().getId().equals(userId)) {
             return;
         }

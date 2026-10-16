@@ -1,6 +1,6 @@
 package com.verysmartbus.controller;
 
-import com.verysmartbus.dto.request.DriverLocationUpdateRequestDto;
+import com.verysmartbus.dto.request.LocationUpdateRequestDto;
 import com.verysmartbus.dto.response.TripLocationResponseDto;
 import com.verysmartbus.dto.response.TripResponseDto;
 import com.verysmartbus.security.AuthenticatedUserResolver;
@@ -39,7 +39,7 @@ public class DriverTripController {
     @PatchMapping("/{tripId}/location")
     public TripLocationResponseDto updateCurrentLocation(
             @PathVariable Long tripId,
-            @Valid @RequestBody DriverLocationUpdateRequestDto dto,
+            @Valid @RequestBody LocationUpdateRequestDto dto,
             Authentication authentication
     ) {
         Long currentDriverId = userResolver.getCurrentUserId(authentication);

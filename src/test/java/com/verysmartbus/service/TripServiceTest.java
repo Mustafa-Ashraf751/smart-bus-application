@@ -1,6 +1,6 @@
 package com.verysmartbus.service;
 
-import com.verysmartbus.dto.request.DriverLocationUpdateRequestDto;
+import com.verysmartbus.dto.request.LocationUpdateRequestDto;
 import com.verysmartbus.entity.AppUser;
 import com.verysmartbus.entity.Station;
 import com.verysmartbus.entity.Trip;
@@ -62,11 +62,12 @@ class TripServiceTest {
         Trip trip = Trip.builder()
                 .id(50L)
                 .driver(AppUser.builder().id(7L).build())
+                .busAdmin(AppUser.builder().id(5L).build())
                 .status(TripStatus.IN_PROGRESS)
                 .build();
         Station pickupStation = Station.builder().id(9L).name("Central Station").build();
         AtomicReference<List<TripStationPresence>> storedPresences = new AtomicReference<>(List.of());
-        DriverLocationUpdateRequestDto location = new DriverLocationUpdateRequestDto(
+        LocationUpdateRequestDto location = new LocationUpdateRequestDto(
                 new BigDecimal("30.0444"), new BigDecimal("31.2357"));
 
         when(tripRepository.findById(50L)).thenReturn(Optional.of(trip));
@@ -82,11 +83,11 @@ class TripServiceTest {
         when(locationFreshnessService.isStale(any())).thenReturn(false);
 
         // First spatial hit is deliberately not enough to trust GPS noise near a polygon edge.
-        service.updateCurrentLocation(50L, 7L, location);
+        service.updateCurrentLocation(50L, 5L, location);
         verify(tripNotificationService, never()).busArrivedAtPickup(any(), any());
 
         // The second consecutive hit confirms arrival and emits the pickup notification once.
-        service.updateCurrentLocation(50L, 7L, location);
+        service.updateCurrentLocation(50L, 5L, location);
         verify(tripNotificationService).busArrivedAtPickup(trip, pickupStation);
     }
 }

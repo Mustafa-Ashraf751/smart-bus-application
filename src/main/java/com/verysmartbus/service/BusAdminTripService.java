@@ -2,6 +2,8 @@ package com.verysmartbus.service;
 
 import com.verysmartbus.dto.request.BusAdminTripBusUpdateRequestDto;
 import com.verysmartbus.dto.request.BusAdminTripDriverUpdateRequestDto;
+import com.verysmartbus.dto.request.LocationUpdateRequestDto;
+import com.verysmartbus.dto.response.TripLocationResponseDto;
 import com.verysmartbus.dto.response.TripResponseDto;
 import com.verysmartbus.entity.AppUser;
 import com.verysmartbus.entity.Bus;
@@ -37,6 +39,7 @@ public class BusAdminTripService {
     private final BusAdminTripAccessAuthorizer accessAuthorizer;
     private final TripMapper tripMapper;
     private final TripNotificationService tripNotificationService;
+    private final TripService tripService;
 
     public List<TripResponseDto> findMyTrips(Long busAdminId) {
         return tripRepository.findAllByBusAdmin_IdOrderByServiceDateAscScheduledStartTimeAsc(busAdminId)
@@ -106,6 +109,13 @@ public class BusAdminTripService {
         trip.setStatus(TripStatus.COMPLETED);
         trip.setActualEndTime(OffsetDateTime.now(ZoneOffset.UTC));
         return tripMapper.toResponseDto(trip);
+    }
+
+    @Transactional
+    public TripLocationResponseDto updateCurrentLocation(
+            Long busAdminId, Long tripId, LocationUpdateRequestDto request) {
+        accessAuthorizer.findAssignedTrip(busAdminId, tripId);
+        return tripService.updateCurrentLocation(tripId, busAdminId, request);
     }
 
     private void ensureTripCanBeChanged(Trip trip) {
