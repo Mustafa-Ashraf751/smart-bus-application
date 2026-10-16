@@ -27,12 +27,12 @@ public class DriverTripController {
         return ResponseEntity.ok(tripService.startTrip(currentDriverId, tripId));
     }
 
-    @PatchMapping("/{tripId}/end")
-    public ResponseEntity<TripResponseDto> endTrip(
+    @PatchMapping("/{tripId}/complete")
+    public ResponseEntity<TripResponseDto> completeTrip(
             @PathVariable Long tripId,
             Authentication authentication) {
         Long currentDriverId = userResolver.getCurrentUserId(authentication);
-        return ResponseEntity.ok(tripService.endTrip(currentDriverId, tripId));
+        return ResponseEntity.ok(tripService.completeTrip(currentDriverId, tripId));
     }
 
     /** Legacy driver-only location endpoint; new clients use TripParticipantController instead. */

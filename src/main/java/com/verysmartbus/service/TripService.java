@@ -290,7 +290,7 @@ public class TripService {
     }
 
     @Transactional
-    public TripResponseDto endTrip(Long currentDriverId, Long tripId) {
+    public TripResponseDto completeTrip(Long currentDriverId, Long tripId) {
         Trip trip = tripRepository.findById(tripId)
                 .orElseThrow(() -> new EntityNotFoundException("Trip not found: " + tripId));
 

@@ -233,7 +233,7 @@ These existing endpoints require `DRIVER` and only accept the assigned driver:
 | Method | Endpoint |
 |---|---|
 | PATCH | `/api/driver/trips/{tripId}/start` |
-| PATCH | `/api/driver/trips/{tripId}/end` |
+| PATCH | `/api/driver/trips/{tripId}/complete` |
 | PATCH | `/api/driver/trips/{tripId}/location` |
 
 For new screens, prefer the generic `/api/trips/{tripId}/start` and
