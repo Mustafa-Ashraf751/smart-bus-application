@@ -131,12 +131,14 @@ GET /api/transport-preferences/routes
 ```
 
 These endpoints return fixed RouteStation IDs. Do not use `tripStationId` from
-`GET /api/trips/available` here; those are for a one-day manual reservation.
+`GET /api/reservations/available-trips` here; those are for a one-day manual
+reservation.
 
 ### Reservations
 
 | Method | Endpoint | Purpose |
 |---|---|---|
+| GET | `/api/reservations/available-trips` | Show bookable daily trips, stops, capacity, availability, and the passenger's current reservation. Optional `?routeId={id}` filters one route. |
 | POST | `/api/reservations` | Create a manual reservation for current user. |
 | GET | `/api/reservations/me` | List own reservations; also ensures today's preference reservations exist. |
 | PATCH | `/api/reservations/{reservationId}/cancel` | Cancel own reservation. |
@@ -155,6 +157,11 @@ Manual reservations use **TripStation IDs**, because actual daily trip stations 
 differ from the original RouteStations. Statuses: `RESERVED`, `WAITLISTED`,
 `CANCELLED`, `COMPLETED`. A cancelled confirmed reservation may promote the oldest
 waitlisted passenger.
+
+Booking-screen flow: call `GET /api/reservations/available-trips`, choose its
+`tripId`, `pickupTripStationId`, and `dropoffTripStationId`, then call
+`POST /api/reservations`. The GET call creates any missing trips for today before
+returning the booking choices.
 
 ### Notifications
 

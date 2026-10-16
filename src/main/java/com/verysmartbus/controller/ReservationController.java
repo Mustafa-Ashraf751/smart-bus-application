@@ -1,9 +1,11 @@
 package com.verysmartbus.controller;
 
 import com.verysmartbus.dto.request.ReservationRequestDto;
+import com.verysmartbus.dto.response.AvailableTripResponseDto;
 import com.verysmartbus.dto.response.BusResponseDto;
 import com.verysmartbus.dto.response.ReservationResponseDto;
 import com.verysmartbus.security.AuthenticatedUserResolver;
+import com.verysmartbus.service.AvailableTripService;
 import com.verysmartbus.service.DailyTripService;
 import com.verysmartbus.service.ReservationService;
 import jakarta.validation.Valid;
@@ -26,7 +28,21 @@ public class ReservationController {
 
     private final ReservationService reservationService;
     private final DailyTripService dailyTripService;
+    private final AvailableTripService availableTripService;
     private final AuthenticatedUserResolver userResolver;
+
+    /**
+     * Trips the logged-in passenger can book. Optional ?routeId= narrows it to one route.
+     * Opening the booking screen also creates today's missing daily trips, when needed.
+     */
+    @GetMapping("/available-trips")
+    public ResponseEntity<List<AvailableTripResponseDto>> getAvailableTrips(
+            @RequestParam(required = false) Long routeId,
+            Authentication authentication) {
+        Long currentUserId = userResolver.getCurrentUserId(authentication);
+        dailyTripService.ensureTodayTrips();
+        return ResponseEntity.ok(availableTripService.findAvailable(currentUserId, routeId));
+    }
 
     @PostMapping
     public ResponseEntity<ReservationResponseDto> create(
