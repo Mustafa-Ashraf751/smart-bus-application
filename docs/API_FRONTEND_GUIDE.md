@@ -63,10 +63,12 @@ reload if the frontend needs the latest role/permission state.
 
 | Method | Endpoint | What the frontend uses it for |
 |---|---|---|
+| GET | `/api/trips/me` | List trips connected to the logged-in user: assigned Driver, assigned Bus Admin, or non-cancelled passenger reservation. |
 | GET | `/api/trips/today` | Gets today's operational trips. It also lazily creates missing daily trips first. |
 | GET | `/api/trips/{tripId}/location` | Gets current location, freshness flag, and station-presence information. |
-| PATCH | `/api/trips/{tripId}/start` | Starts a trip; only assigned driver or a passenger with a `RESERVED` reservation may do it. |
+| PATCH | `/api/trips/{tripId}/start` | Starts a trip; only assigned Bus Admin, assigned Driver, or a passenger with a `RESERVED` reservation may do it. |
 | PATCH | `/api/trips/{tripId}/location` | Sends the shared bus location; assigned Bus Admin, assigned driver, or a passenger with a `RESERVED` reservation may send it. |
+| PATCH | `/api/trips/{tripId}/complete` | Completes an in-progress trip; same authorization rule as start. |
 
 Location request body:
 
@@ -183,13 +185,9 @@ that the trip belongs to that Bus Admin.
 
 | Method | Endpoint | Purpose |
 |---|---|---|
-| GET | `/api/bus-admin/trips/me` | List assigned trips. |
 | GET | `/api/bus-admin/trips/{tripId}` | Get one assigned trip. |
 | PATCH | `/api/bus-admin/trips/{tripId}/bus` | Change assigned bus. |
 | PATCH | `/api/bus-admin/trips/{tripId}/driver` | Change assigned driver. |
-| PATCH | `/api/bus-admin/trips/{tripId}/start` | Start the trip. |
-| PATCH | `/api/bus-admin/trips/{tripId}/complete` | Complete the trip. |
-| PATCH | `/api/bus-admin/trips/{tripId}/location` | Send the live location for the assigned trip. |
 | GET | `/api/bus-admin/trips/{tripId}/stations` | List actual TripStations. |
 | POST | `/api/bus-admin/trips/{tripId}/stations` | Add a physical station to actual trip. |
 | PATCH | `/api/bus-admin/trips/{tripId}/stations/{tripStationId}/arrival-time` | Change only that actual station's time. |
@@ -217,30 +215,10 @@ Update its time:
 { "expectedArrivalTime": "13:34:44" }
 ```
 
-Location update body:
-
-```json
-{ "latitude": 30.012345, "longitude": 31.123456 }
-```
-
 RouteStations are the fixed template. TripStations are the actual copy for that
 one daily Trip; changing them does not change the route template.
 
-## 5. Driver app (legacy endpoints)
-
-These existing endpoints require `DRIVER` and only accept the assigned driver:
-
-| Method | Endpoint |
-|---|---|
-| PATCH | `/api/driver/trips/{tripId}/start` |
-| PATCH | `/api/driver/trips/{tripId}/complete` |
-| PATCH | `/api/driver/trips/{tripId}/location` |
-
-For new screens, prefer the generic `/api/trips/{tripId}/start` and
-`/api/trips/{tripId}/location` endpoints where appropriate, because they support
-the intended shared participant model.
-
-## 6. Admin app
+## 5. Admin app
 
 Every `/api/admin/**` endpoint requires `ADMIN`.
 
@@ -291,7 +269,7 @@ Important admin request examples:
 { "routeId": 3, "serviceDate": "2026-10-13" }
 ```
 
-## 7. WebSocket / STOMP
+## 6. WebSocket / STOMP
 
 Use a STOMP client, connect to:
 
@@ -314,7 +292,7 @@ Clients must not publish to `/topic/**`. The server alone publishes live locatio
 after the database transaction commits. Keep a REST fallback: on reconnect, call
 `GET /api/notifications/me` and `GET /api/trips/{tripId}/location`.
 
-## 8. Recommended screen flows
+## 7. Recommended screen flows
 
 1. **App launch:** restore token, call `/api/auth/me`, render screens based on roles.
    A newly registered user has no token until an admin approves them.
@@ -327,7 +305,7 @@ after the database transaction commits. Keep a REST fallback: on reconnect, call
 5. **Live map:** subscribe to trip location topic and render the latest coordinates;
    use the REST location endpoint to populate the map before the first socket event.
 
-## 9. Frontend implementation notes
+## 8. Frontend implementation notes
 
 - Treat `accessToken` as sensitive. Never log it or include it in URLs.
 - A `TripResponseDto` identifies a daily execution. Its `routeId` identifies the

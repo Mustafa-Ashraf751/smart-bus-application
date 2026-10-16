@@ -24,6 +24,22 @@ public interface TripRepository extends JpaRepository<Trip, Long> {
     Optional<Trip> findByIdForUpdate(@Param("id") Long id);
     List<Trip> findByServiceDateOrderByScheduledStartTimeAsc(LocalDate serviceDate);
 
+    /** All trips relevant to one user: operated by them or reserved by them. */
+    @Query("""
+            select t
+            from Trip t
+            where t.driver.id = :userId
+               or (t.busAdmin is not null and t.busAdmin.id = :userId)
+               or exists (
+                   select 1 from Reservation reservation
+                   where reservation.trip = t
+                     and reservation.user.id = :userId
+                     and reservation.status <> com.verysmartbus.entity.enums.ReservationStatus.CANCELLED
+               )
+            order by t.serviceDate asc, t.scheduledStartTime asc
+            """)
+    List<Trip> findRelevantTripsForUser(@Param("userId") Long userId);
+
     @Query("""
     select t
     from Trip t

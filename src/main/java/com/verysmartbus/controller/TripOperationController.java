@@ -17,15 +17,25 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Operations shared by the assigned driver and passengers with confirmed reservations. */
+import java.util.List;
+
+/**
+ * Shared live-trip operations. The service verifies the current user's actual relationship to
+ * each trip, rather than trusting a frontend role choice.
+ */
 @RestController
 @RequestMapping("/api/trips")
 @RequiredArgsConstructor
-public class TripParticipantController {
+public class TripOperationController {
 
     private final TripService tripService;
     private final AuthenticatedUserResolver userResolver;
     private final TripLocationAccessAuthorizer locationAccessAuthorizer;
+
+    @GetMapping("/me")
+    public List<TripResponseDto> getMyTrips(Authentication authentication) {
+        return tripService.findMyTrips(userResolver.getCurrentUserId(authentication));
+    }
 
     /** Current location is visible only to a participant or authorized operational user. */
     @GetMapping("/{tripId}/location")
@@ -52,5 +62,13 @@ public class TripParticipantController {
             Authentication authentication
     ) {
         return tripService.updateCurrentLocation(tripId, userResolver.getCurrentUserId(authentication), dto);
+    }
+
+    @PatchMapping("/{tripId}/complete")
+    public ResponseEntity<TripResponseDto> completeTrip(
+            @PathVariable Long tripId,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(tripService.completeTrip(userResolver.getCurrentUserId(authentication), tripId));
     }
 }

@@ -1,6 +1,7 @@
 package com.verysmartbus.service;
 
 import com.verysmartbus.dto.request.LocationUpdateRequestDto;
+import com.verysmartbus.dto.response.TripResponseDto;
 import com.verysmartbus.entity.AppUser;
 import com.verysmartbus.entity.Station;
 import com.verysmartbus.entity.Trip;
@@ -20,6 +21,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationEventPublisher;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -30,8 +33,43 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class TripServiceTest {
+
+    @Test
+    void listsTripsRelevantToTheLoggedInUser() {
+        TripRepository tripRepository = mock(TripRepository.class);
+        TripMapper tripMapper = mock(TripMapper.class);
+        TripService service = newTripService(tripRepository, tripMapper);
+        Trip trip = Trip.builder().id(50L).build();
+        TripResponseDto response = tripResponse(50L);
+        when(tripRepository.findRelevantTripsForUser(5L)).thenReturn(List.of(trip));
+        when(tripMapper.toResponseDto(trip)).thenReturn(response);
+
+        assertEquals(List.of(response), service.findMyTrips(5L));
+    }
+
+    @Test
+    void letsAssignedBusAdminCompleteAnInProgressTrip() {
+        TripRepository tripRepository = mock(TripRepository.class);
+        TripMapper tripMapper = mock(TripMapper.class);
+        TripService service = newTripService(tripRepository, tripMapper);
+        Trip trip = Trip.builder()
+                .id(50L)
+                .driver(AppUser.builder().id(7L).build())
+                .busAdmin(AppUser.builder().id(5L).build())
+                .serviceDate(LocalDate.now(ZoneId.of("Africa/Cairo")))
+                .status(TripStatus.IN_PROGRESS)
+                .build();
+        TripResponseDto response = tripResponse(50L);
+        when(tripRepository.findById(50L)).thenReturn(Optional.of(trip));
+        when(tripRepository.save(trip)).thenReturn(trip);
+        when(tripMapper.toResponseDto(trip)).thenReturn(response);
+
+        assertEquals(response, service.completeTrip(5L, 50L));
+        assertEquals(TripStatus.COMPLETED, trip.getStatus());
+    }
 
     @Test
     void sendsPickupArrivalNotificationOnlyAfterTwoConsecutiveInsidePolygonUpdates() {
@@ -89,5 +127,29 @@ class TripServiceTest {
         // The second consecutive hit confirms arrival and emits the pickup notification once.
         service.updateCurrentLocation(50L, 5L, location);
         verify(tripNotificationService).busArrivedAtPickup(trip, pickupStation);
+    }
+
+    private TripService newTripService(TripRepository tripRepository, TripMapper tripMapper) {
+        return new TripService(
+                tripRepository,
+                mock(RouteRepository.class),
+                mock(RouteStationRepository.class),
+                mock(StationRepository.class),
+                mock(TripStationRepository.class),
+                mock(TripStationPresenceRepository.class),
+                mock(ReservationRepository.class),
+                mock(LocationFreshnessService.class),
+                mock(ApplicationEventPublisher.class),
+                tripMapper,
+                mock(TripStationMapper.class),
+                new LocationMapper(),
+                mock(TripNotificationService.class)
+        );
+    }
+
+    private TripResponseDto tripResponse(Long tripId) {
+        return new TripResponseDto(
+                tripId, null, null, null, null, null, null, null, null,
+                null, null, false, null, null, null);
     }
 }

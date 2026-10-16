@@ -1,6 +1,8 @@
 package com.verysmartbus.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.verysmartbus.entity.enums.ReservationStatus;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -28,6 +30,8 @@ public record AvailableTripResponseDto(
             Long tripStationId,
             String stationName,
             Integer stopOrder,
+            @JsonFormat(pattern = "HH:mm:ss")
+            @Schema(type = "string", format = "time", example = "13:34:44")
             LocalTime expectedArrivalTime
     ) {
     }

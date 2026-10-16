@@ -75,6 +75,13 @@ public class TripService {
                 .toList();
     }
 
+    /** Trips the current user operates or has reserved; a cancelled reservation does not count. */
+    public List<TripResponseDto> findMyTrips(Long userId) {
+        return tripRepository.findRelevantTripsForUser(userId).stream()
+                .map(mapper::toResponseDto)
+                .toList();
+    }
+
     public TripResponseDto findById(Long tripId) {
         return mapper.toResponseDto(findEntityById(tripId));
     }
@@ -290,13 +297,11 @@ public class TripService {
     }
 
     @Transactional
-    public TripResponseDto completeTrip(Long currentDriverId, Long tripId) {
+    public TripResponseDto completeTrip(Long currentUserId, Long tripId) {
         Trip trip = tripRepository.findById(tripId)
                 .orElseThrow(() -> new EntityNotFoundException("Trip not found: " + tripId));
 
-        if (!trip.getDriver().getId().equals(currentDriverId)) {
-            throw new ForbiddenOperationException("You are not the driver assigned to this trip.");
-        }
+        assertCanOperateTrip(trip, currentUserId);
 
         ensureTripRunsToday(trip);
 

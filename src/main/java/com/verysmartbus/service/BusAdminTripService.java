@@ -2,8 +2,6 @@ package com.verysmartbus.service;
 
 import com.verysmartbus.dto.request.BusAdminTripBusUpdateRequestDto;
 import com.verysmartbus.dto.request.BusAdminTripDriverUpdateRequestDto;
-import com.verysmartbus.dto.request.LocationUpdateRequestDto;
-import com.verysmartbus.dto.response.TripLocationResponseDto;
 import com.verysmartbus.dto.response.TripResponseDto;
 import com.verysmartbus.entity.AppUser;
 import com.verysmartbus.entity.Bus;
@@ -12,18 +10,12 @@ import com.verysmartbus.entity.enums.TripStatus;
 import com.verysmartbus.exception.ResourceNotFoundException;
 import com.verysmartbus.mapper.TripMapper;
 import com.verysmartbus.repository.BusRepository;
-import com.verysmartbus.repository.TripRepository;
 import com.verysmartbus.repository.UserRepository;
 import com.verysmartbus.security.BusAdminTripAccessAuthorizer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.util.List;
 
 @Service
 @Transactional(readOnly = true)
@@ -31,22 +23,10 @@ import java.util.List;
 public class BusAdminTripService {
 
     private static final String DRIVER_ROLE_NAME = "DRIVER";
-    private static final ZoneId BUSINESS_ZONE = ZoneId.of("Africa/Cairo");
-
-    private final TripRepository tripRepository;
     private final BusRepository busRepository;
     private final UserRepository userRepository;
     private final BusAdminTripAccessAuthorizer accessAuthorizer;
     private final TripMapper tripMapper;
-    private final TripNotificationService tripNotificationService;
-    private final TripService tripService;
-
-    public List<TripResponseDto> findMyTrips(Long busAdminId) {
-        return tripRepository.findAllByBusAdmin_IdOrderByServiceDateAscScheduledStartTimeAsc(busAdminId)
-                .stream()
-                .map(tripMapper::toResponseDto)
-                .toList();
-    }
 
     public TripResponseDto findMyTrip(Long busAdminId, Long tripId) {
         return tripMapper.toResponseDto(accessAuthorizer.findAssignedTrip(busAdminId, tripId));
@@ -84,51 +64,10 @@ public class BusAdminTripService {
         return tripMapper.toResponseDto(trip);
     }
 
-    @Transactional
-    public TripResponseDto start(Long busAdminId, Long tripId) {
-        Trip trip = accessAuthorizer.findAssignedTrip(busAdminId, tripId);
-        ensureTripRunsToday(trip);
-        if (trip.getStatus() != TripStatus.SCHEDULED) {
-            throw new IllegalStateException("Only a scheduled trip can be started.");
-        }
-
-        trip.setStatus(TripStatus.IN_PROGRESS);
-        trip.setActualStartTime(OffsetDateTime.now(ZoneOffset.UTC));
-        tripNotificationService.tripStarted(trip);
-        return tripMapper.toResponseDto(trip);
-    }
-
-    @Transactional
-    public TripResponseDto complete(Long busAdminId, Long tripId) {
-        Trip trip = accessAuthorizer.findAssignedTrip(busAdminId, tripId);
-        ensureTripRunsToday(trip);
-        if (trip.getStatus() != TripStatus.IN_PROGRESS) {
-            throw new IllegalStateException("Only an in-progress trip can be completed.");
-        }
-
-        trip.setStatus(TripStatus.COMPLETED);
-        trip.setActualEndTime(OffsetDateTime.now(ZoneOffset.UTC));
-        return tripMapper.toResponseDto(trip);
-    }
-
-    @Transactional
-    public TripLocationResponseDto updateCurrentLocation(
-            Long busAdminId, Long tripId, LocationUpdateRequestDto request) {
-        accessAuthorizer.findAssignedTrip(busAdminId, tripId);
-        return tripService.updateCurrentLocation(tripId, busAdminId, request);
-    }
-
     private void ensureTripCanBeChanged(Trip trip) {
         if (trip.getStatus() != TripStatus.SCHEDULED) {
             throw new IllegalStateException("Bus and driver can be changed only while a trip is scheduled.");
         }
     }
 
-    private void ensureTripRunsToday(Trip trip) {
-        LocalDate today = LocalDate.now(BUSINESS_ZONE);
-        if (!trip.getServiceDate().equals(today)) {
-            throw new IllegalStateException("This trip can be operated only on its service date: "
-                    + trip.getServiceDate() + ".");
-        }
-    }
 }
