@@ -9,7 +9,7 @@ source of truth for every field and response schema while developing:
 
 - Base URL in local development: `http://localhost:8080`.
 - Send JSON and use `Content-Type: application/json`.
-- Except for login, send `Authorization: Bearer <accessToken>` on every request.
+- Except for login and registration, send `Authorization: Bearer <accessToken>` on every request.
 - `401` means the token is missing/expired. `403` means the logged-in user is not
   allowed to do that action. `400` means invalid request data. `404` means the ID
   does not exist (or is not accessible).
@@ -220,23 +220,126 @@ one daily Trip; changing them does not change the route template.
 
 ## 5. Admin app
 
-Every `/api/admin/**` endpoint requires `ADMIN`.
+Every `/api/admin/**` endpoint requires the `ADMIN` role. Endpoints marked **no body**
+must be called without a JSON request body.
 
-| Resource | Endpoints |
-|---|---|
-| Users | `POST/GET /api/admin/users`, `GET/PUT /api/admin/users/{userId}`, `PATCH /{userId}/approve`, `PATCH /{userId}/reject`, `PATCH /{userId}/activate`, `PATCH /{userId}/deactivate`, `PUT/DELETE /{userId}/roles/{roleId}` |
-| Roles | `POST/GET /api/admin/roles`, `GET/PUT/DELETE /api/admin/roles/{roleId}`, `PUT/DELETE /{roleId}/permissions/{permissionId}` |
-| Permissions | `POST/GET /api/admin/permissions`, `GET/PUT/DELETE /api/admin/permissions/{permissionId}` |
-| Buses | `POST/GET /api/admin/buses`, `GET/PUT /api/admin/buses/{id}`, `PATCH /{id}/activate`, `PATCH /{id}/deactivate` |
-| Stations | `POST/GET /api/admin/stations`, `GET/PUT/DELETE /api/admin/stations/{id}` |
-| Routes | `POST/GET /api/admin/routes`, `GET/PUT/DELETE /api/admin/routes/{id}`, `PUT /{id}/path` |
-| RouteStations | `POST/GET /api/admin/route-stations`, `GET/DELETE /api/admin/route-stations/{id}` |
-| Trips | `POST/GET /api/admin/trips`, `GET/DELETE /api/admin/trips/{id}`, `PATCH /{id}/start`, `PATCH /{id}/complete` |
+### Users — `/api/admin/users`
 
-Important admin request examples:
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | `/api/admin/users` | Create a user manually. |
+| GET | `/api/admin/users` | List every user, including `PENDING` registrations. |
+| GET | `/api/admin/users/{userId}` | Get one user. |
+| PUT | `/api/admin/users/{userId}` | Update user data. Password may be omitted when it should not change. |
+| PATCH | `/api/admin/users/{userId}/approve` | Approve a registered pending user and make the account active. **No body.** |
+| PATCH | `/api/admin/users/{userId}/reject` | Reject/deactivate a registration. **No body.** |
+| PATCH | `/api/admin/users/{userId}/activate` | Activate an existing user. **No body.** |
+| PATCH | `/api/admin/users/{userId}/deactivate` | Deactivate a user. **No body.** |
+| PUT | `/api/admin/users/{userId}/roles/{roleId}` | Give a role to a user. **No body.** |
+| DELETE | `/api/admin/users/{userId}/roles/{roleId}` | Remove a role from a user. **No body.** |
+
+Create/update body:
 
 ```json
-// Route
+{
+  "name": "Sara Ahmed",
+  "phone": "01000000000",
+  "address": "Sheikh Zayed",
+  "email": "sara@example.com",
+  "password": "secure-password"
+}
+```
+
+### Roles — `/api/admin/roles`
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | `/api/admin/roles` | Create a role. |
+| GET | `/api/admin/roles` | List roles. |
+| GET | `/api/admin/roles/{roleId}` | Get a role. |
+| PUT | `/api/admin/roles/{roleId}` | Update a role. |
+| PUT | `/api/admin/roles/{roleId}/permissions/{permissionId}` | Attach a permission to a role. **No body.** |
+| DELETE | `/api/admin/roles/{roleId}` | Delete a role. **No body.** |
+| DELETE | `/api/admin/roles/{roleId}/permissions/{permissionId}` | Remove a permission from a role. **No body.** |
+
+Create/update body:
+
+```json
+{ "name": "BUS_ADMIN", "description": "Manages assigned trips" }
+```
+
+### Permissions — `/api/admin/permissions`
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | `/api/admin/permissions` | Create a permission. |
+| GET | `/api/admin/permissions` | List permissions. |
+| GET | `/api/admin/permissions/{permissionId}` | Get a permission. |
+| PUT | `/api/admin/permissions/{permissionId}` | Update a permission. |
+| DELETE | `/api/admin/permissions/{permissionId}` | Delete a permission. **No body.** |
+
+Create/update body:
+
+```json
+{ "name": "BOOK_TRIP", "description": "Allows a user to create reservations" }
+```
+
+### Buses — `/api/admin/buses`
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | `/api/admin/buses` | Create a bus; a new bus is active by default. |
+| GET | `/api/admin/buses?status=ACTIVE` | List buses; `status` is optional and may be `ACTIVE` or `INACTIVE`. |
+| GET | `/api/admin/buses/{id}` | Get one bus. |
+| PUT | `/api/admin/buses/{id}` | Update bus number/capacity. |
+| PATCH | `/api/admin/buses/{id}/activate` | Activate the bus. **No body.** |
+| PATCH | `/api/admin/buses/{id}/deactivate` | Deactivate the bus. **No body.** |
+
+Create/update body:
+
+```json
+{ "busNumber": "BUS-12", "capacity": 30 }
+```
+
+### Physical stations — `/api/admin/stations`
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | `/api/admin/stations` | Create a physical pickup station. |
+| GET | `/api/admin/stations` | List physical stations. |
+| GET | `/api/admin/stations/{id}` | Get one station. |
+| PUT | `/api/admin/stations/{id}` | Update a station. |
+| DELETE | `/api/admin/stations/{id}` | Delete a station. **No body.** |
+
+Create/update body:
+
+```json
+{
+  "name": "Zayed Gate",
+  "address": "Sheikh Zayed",
+  "pickupLatitude": 30.012345,
+  "pickupLongitude": 31.123456,
+  "status": "ACTIVE"
+}
+```
+
+`status` is `ACTIVE` or `INACTIVE`. The latitude/longitude describe the pickup
+area configured in the backend and are also used for arrival detection.
+
+### Route templates — `/api/admin/routes`
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | `/api/admin/routes` | Create a reusable route template and its operational defaults. |
+| GET | `/api/admin/routes` | List all route templates. |
+| GET | `/api/admin/routes/{id}` | Get one route template. |
+| PUT | `/api/admin/routes/{id}` | Update route details/default assignments. |
+| PUT | `/api/admin/routes/{id}/path` | Set its map path using at least two points. |
+| DELETE | `/api/admin/routes/{id}` | Delete a route. **No body.** |
+
+Create/update body:
+
+```json
 {
   "name": "Zayed to Company",
   "status": "ACTIVE",
@@ -248,26 +351,59 @@ Important admin request examples:
 }
 ```
 
-```json
-// Route station (fixed template stop)
-{ "routeId": 3, "stationId": 9, "stopOrder": 1, "expectedArrivalTime": "07:30:00" }
-```
+`direction` is `TO_COMPANY` or `FROM_COMPANY`; `status` is `ACTIVE` or `INACTIVE`.
+
+Route path body:
 
 ```json
-// Physical station; these coordinates represent the pickup-area center/boundary managed by backend
 {
-  "name": "Zayed Gate",
-  "address": "Zayed",
-  "pickupLatitude": 30.012345,
-  "pickupLongitude": 31.123456,
-  "status": "ACTIVE"
+  "points": [
+    { "latitude": 30.0444, "longitude": 31.2357 },
+    { "latitude": 30.0619, "longitude": 31.2197 }
+  ]
 }
 ```
 
+### Fixed route stops — `/api/admin/route-stations`
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | `/api/admin/route-stations` | Add a fixed physical station to a route template. |
+| GET | `/api/admin/route-stations?routeId={routeId}` | List a route's fixed stops in order. `routeId` is required. |
+| GET | `/api/admin/route-stations/{id}` | Get one fixed route stop. |
+| DELETE | `/api/admin/route-stations/{id}` | Remove it from the route template. **No body.** |
+
+Create body:
+
 ```json
-// Manual Trip creation (normally GET /api/trips/today creates today's trips automatically)
-{ "routeId": 3, "serviceDate": "2026-10-13" }
+{
+  "routeId": 3,
+  "stationId": 9,
+  "stopOrder": 1,
+  "expectedArrivalTime": "07:30:00"
+}
 ```
+
+### Daily Trips — `/api/admin/trips`
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | `/api/admin/trips` | Create a daily Trip manually from a route's current defaults. |
+| GET | `/api/admin/trips?routeId={optional}` | List all Trips, optionally for one route. |
+| GET | `/api/admin/trips/{id}` | Get one Trip. |
+| PATCH | `/api/admin/trips/{id}/start` | Start a Trip as Admin. **No body.** |
+| PATCH | `/api/admin/trips/{id}/complete` | Complete a Trip as Admin. **No body.** |
+| DELETE | `/api/admin/trips/{id}` | Delete a Trip. **No body.** |
+
+Create body:
+
+```json
+{ "routeId": 3, "serviceDate": "2026-10-20" }
+```
+
+Normally, opening `GET /api/trips/today`, `GET /api/reservations/me`, or
+`GET /api/reservations/available-trips` ensures today's missing daily Trips are
+created automatically. This Admin endpoint is for an explicit manual creation.
 
 ## 6. WebSocket / STOMP
 
@@ -300,8 +436,8 @@ after the database transaction commits. Keep a REST fallback: on reconnect, call
    `/api/notifications/me`; subscribe to notification queue and selected trip location.
 3. **Passenger preference form:** load routes and route stations, submit IDs to
    `/api/transport-preferences`.
-4. **Bus Admin home:** call `/api/bus-admin/trips/me`; open a trip and load its
-   TripStations. Edit only its actual TripStations.
+4. **Bus Admin home:** call `/api/trips/me`, select an assigned trip, then load
+   `/api/bus-admin/trips/{tripId}/stations`. Edit only its actual TripStations.
 5. **Live map:** subscribe to trip location topic and render the latest coordinates;
    use the REST location endpoint to populate the map before the first socket event.
 
