@@ -24,9 +24,10 @@ public interface UserRepository extends JpaRepository<AppUser, Long> {
             from AppUser appUser
             left join fetch appUser.roles appRole
             left join fetch appRole.permissions
-            where lower(appUser.email) = lower(:email)
+            where lower(appUser.email) = lower(:identifier)
+               or lower(appUser.username) = lower(:identifier)
             """)
-    Optional<AppUser> findByEmailWithRolesAndPermissions(@Param("email") String email);
+    Optional<AppUser> findByLoginIdentifierWithRolesAndPermissions(@Param("identifier") String identifier);
 
     @Query("""
             select distinct appUser
@@ -40,4 +41,8 @@ public interface UserRepository extends JpaRepository<AppUser, Long> {
     boolean existsByEmail(String email);
 
     boolean existsByEmailAndIdNot(String email, Long id);
+
+    boolean existsByUsernameIgnoreCase(String username);
+
+    boolean existsByUsernameIgnoreCaseAndIdNot(String username, Long id);
 }

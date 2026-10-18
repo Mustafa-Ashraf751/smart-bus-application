@@ -30,12 +30,16 @@ public class UserService {
         if (userRepository.existsByEmail(dto.email())) {
             throw new IllegalStateException("Email already registered: " + dto.email());
         }
+        if (userRepository.existsByUsernameIgnoreCase(dto.username())) {
+            throw new IllegalStateException("Username already registered: " + dto.username());
+        }
         if (dto.password() == null || dto.password().isBlank()) {
             throw new IllegalArgumentException("password is required when creating a user.");
         }
 
         AppUser user = AppUser.builder()
                 .name(dto.name())
+                .username(dto.username())
                 .phone(dto.phone())
                 .address(dto.address())
                 .email(dto.email())
@@ -53,8 +57,12 @@ public class UserService {
         if (userRepository.existsByEmailAndIdNot(dto.email(), userId)) {
             throw new IllegalStateException("Email already registered: " + dto.email());
         }
+        if (userRepository.existsByUsernameIgnoreCaseAndIdNot(dto.username(), userId)) {
+            throw new IllegalStateException("Username already registered: " + dto.username());
+        }
 
         existing.setName(dto.name());
+        existing.setUsername(dto.username());
         existing.setPhone(dto.phone());
         existing.setAddress(dto.address());
         existing.setEmail(dto.email());

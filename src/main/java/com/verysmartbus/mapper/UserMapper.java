@@ -19,6 +19,7 @@ public class UserMapper {
         return new UserResponseDto(
                 entity.getId(),
                 entity.getName(),
+                entity.getUsername(),
                 entity.getPhone(),
                 entity.getAddress(),
                 entity.getEmail(),

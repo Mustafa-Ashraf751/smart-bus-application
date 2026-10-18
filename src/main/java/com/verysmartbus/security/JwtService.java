@@ -44,6 +44,7 @@ public class JwtService {
                 .subject(principal.getUserId().toString())
                 .claim("userId", principal.getUserId())
                 .claim("email", principal.getUsername())
+                .claim("username", principal.getLoginUsername())
                 .claim("name", principal.getName())
                 .claim("phone", principal.getPhone())
                 .claim("roles", principal.getRoleNames())

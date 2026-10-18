@@ -9,6 +9,7 @@ import java.util.Set;
 public record UserResponseDto(
         Long userId,
         String name,
+        String username,
         String phone,
         String address,
         String email,

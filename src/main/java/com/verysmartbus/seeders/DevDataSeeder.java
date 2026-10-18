@@ -29,15 +29,15 @@ public class DevDataSeeder {
     }
 
     private void seedUsers() {
-        seedUser("Admin User", "0100000000", "HQ", "admin@verysmartbus.com", "ADMIN");
-        seedUser("Test Driver", "0100000001", "Depot", "driver@verysmartbus.com", "DRIVER");
-        seedUser("Test Employee", "0100000002", "Office", "employee@verysmartbus.com", "EMPLOYEE");
-        seedUser("Test Bus Admin", "0100000003", "Operations", "busadmin@verysmartbus.com", "BUS_ADMIN");
+        seedUser("Admin User", "admin", "0100000000", "HQ", "admin@verysmartbus.com", "ADMIN");
+        seedUser("Test Driver", "driver", "0100000001", "Depot", "driver@verysmartbus.com", "DRIVER");
+        seedUser("Test Employee", "employee", "0100000002", "Office", "employee@verysmartbus.com", "EMPLOYEE");
+        seedUser("Test Bus Admin", "busadmin", "0100000003", "Operations", "busadmin@verysmartbus.com", "BUS_ADMIN");
     }
 
-    private void seedUser(String name, String phone, String address, String email, String roleName) {
+    private void seedUser(String name, String username, String phone, String address, String email, String roleName) {
         if (!userRepository.existsByEmail(email)) {
-            userService.create(new UserRequestDto(name, phone, address, email, "password123"));
+            userService.create(new UserRequestDto(name, username, phone, address, email, "password123"));
             log.info("Seeder: created dev user {}.", email);
         }
         assignRoleIfMissing(email, roleName);

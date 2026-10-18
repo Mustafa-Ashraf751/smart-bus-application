@@ -21,6 +21,7 @@ public class UserPrincipal implements UserDetails {
 
     private final Long userId;
     private final String email;
+    private final String loginUsername;
     private final String name;
     private final String phone;
     private final String address;
@@ -33,6 +34,7 @@ public class UserPrincipal implements UserDetails {
     private UserPrincipal(
             Long userId,
             String email,
+            String loginUsername,
             String name,
             String phone,
             String address,
@@ -43,6 +45,7 @@ public class UserPrincipal implements UserDetails {
     ) {
         this.userId = userId;
         this.email = email;
+        this.loginUsername = loginUsername;
         this.name = name;
         this.phone = phone;
         this.address = address;
@@ -69,6 +72,7 @@ public class UserPrincipal implements UserDetails {
         return new UserPrincipal(
                 user.getId(),
                 user.getEmail(),
+                user.getUsername(),
                 user.getName(),
                 user.getPhone(),
                 user.getAddress(),
@@ -85,6 +89,10 @@ public class UserPrincipal implements UserDetails {
 
     public String getName() {
         return name;
+    }
+
+    public String getLoginUsername() {
+        return loginUsername;
     }
 
     public String getPhone() {

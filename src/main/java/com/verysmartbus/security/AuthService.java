@@ -32,7 +32,7 @@ public class AuthService {
 
     public AuthResponseDto login(LoginRequestDto dto) {
         Authentication authentication = authenticationManager.authenticate(
-                UsernamePasswordAuthenticationToken.unauthenticated(dto.email(), dto.password())
+                UsernamePasswordAuthenticationToken.unauthenticated(dto.identifier(), dto.password())
         );
 
         UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
@@ -55,12 +55,16 @@ public class AuthService {
         if (userRepository.existsByEmail(dto.email())) {
             throw new IllegalStateException("Email already registered.");
         }
+        if (userRepository.existsByUsernameIgnoreCase(dto.username())) {
+            throw new IllegalStateException("Username already registered.");
+        }
 
         Role passengerRole = roleRepository.findByName(PASSENGER_ROLE)
                 .orElseThrow(() -> new IllegalStateException("Default EMPLOYEE role is not configured."));
 
         AppUser user = AppUser.builder()
                 .name(dto.name())
+                .username(dto.username())
                 .phone(dto.phone())
                 .address(dto.address())
                 .email(dto.email())
@@ -71,7 +75,7 @@ public class AuthService {
 
         AppUser saved = userRepository.save(user);
         return new RegistrationResponseDto(
-                saved.getId(), saved.getEmail(), saved.getStatus(),
+                saved.getId(), saved.getUsername(), saved.getEmail(), saved.getStatus(),
                 "Registration received. An administrator must approve your account before you can log in."
         );
     }

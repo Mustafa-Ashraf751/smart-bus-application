@@ -52,14 +52,14 @@ class AuthSecurityIntegrationTest {
     void wrongPasswordIsUnauthorizedNotServerError() throws Exception {
         mockMvc.perform(login("admin@verysmartbus.com", "wrong-password"))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.detail").value("Invalid email or password."));
+                .andExpect(jsonPath("$.detail").value("Invalid username, email, or password."));
     }
 
     @Test
     void unknownEmailGetsTheSameAnswerAsWrongPassword() throws Exception {
         mockMvc.perform(login("nobody@verysmartbus.com", PASSWORD))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.detail").value("Invalid email or password."));
+                .andExpect(jsonPath("$.detail").value("Invalid username, email, or password."));
     }
 
     @Test
@@ -68,10 +68,11 @@ class AuthSecurityIntegrationTest {
         String body = mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"name":"New Passenger", "phone":"01012345678", "address":"Zayed",
+                                {"name":"New Passenger", "username":"new.passenger", "phone":"01012345678", "address":"Zayed",
                                  "email":"new.passenger@verysmartbus.com", "password":"password123"}
                                 """))
                 .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.username").value("new.passenger"))
                 .andExpect(jsonPath("$.email").value(email))
                 .andExpect(jsonPath("$.status").value("PENDING"))
                 .andReturn().getResponse().getContentAsString();
@@ -87,8 +88,9 @@ class AuthSecurityIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("ACTIVE"));
 
-        mockMvc.perform(login(email, PASSWORD))
+        mockMvc.perform(login("new.passenger", PASSWORD))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.user.username").value("new.passenger"))
                 .andExpect(jsonPath("$.user.roles[0]").value("EMPLOYEE"))
                 .andExpect(jsonPath("$.user.permissions[0]").value("BOOK_TRIP"));
     }
@@ -98,7 +100,17 @@ class AuthSecurityIntegrationTest {
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"name":"Existing", "email":"employee@verysmartbus.com", "password":"password123"}
+                                {"name":"Existing", "username":"existing-user", "email":"employee@verysmartbus.com", "password":"password123"}
+                                """))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void registrationRejectsAUsernameThatAlreadyExistsIgnoringCase() throws Exception {
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"Existing", "username":"EMPLOYEE", "email":"another@example.com", "password":"password123"}
                                 """))
                 .andExpect(status().isConflict());
     }
@@ -109,7 +121,7 @@ class AuthSecurityIntegrationTest {
         String body = mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"name":"Rejected Passenger", "email":"rejected.passenger@verysmartbus.com",
+                                {"name":"Rejected Passenger", "username":"rejected.passenger", "email":"rejected.passenger@verysmartbus.com",
                                  "password":"password123"}
                                 """))
                 .andExpect(status().isCreated())
@@ -131,6 +143,7 @@ class AuthSecurityIntegrationTest {
         String body = mockMvc.perform(login("admin@verysmartbus.com", PASSWORD))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.tokenType").value("Bearer"))
+                .andExpect(jsonPath("$.user.username").value("admin"))
                 .andExpect(jsonPath("$.user.email").value("admin@verysmartbus.com"))
                 .andExpect(jsonPath("$.user.name").value("Admin User"))
                 .andExpect(jsonPath("$.user.phone").value("0100000000"))
@@ -143,6 +156,7 @@ class AuthSecurityIntegrationTest {
 
         assertThat(claims.get("sub").asText()).isEqualTo(response.at("/user/userId").asText());
         assertThat(claims.get("userId").asLong()).isEqualTo(response.at("/user/userId").asLong());
+        assertThat(claims.get("username").asText()).isEqualTo("admin");
         assertThat(claims.get("email").asText()).isEqualTo("admin@verysmartbus.com");
         assertThat(claims.get("name").asText()).isEqualTo("Admin User");
         assertThat(claims.get("phone").asText()).isEqualTo("0100000000");
@@ -154,16 +168,20 @@ class AuthSecurityIntegrationTest {
     }
 
     @Test
-    void loginMatchesEmailsStoredWithCapitalLetters() throws Exception {
+    void loginMatchesEmailsAndUsernamesIgnoringCase() throws Exception {
         if (userRepository.findByEmail("Mixed.Case@VerySmartBus.com").isEmpty()) {
             userRepository.save(AppUser.builder()
                     .name("Mixed Case")
+                    .username("mixed.case")
                     .email("Mixed.Case@VerySmartBus.com")
                     .passwordHash(passwordEncoder.encode(PASSWORD))
                     .build());
         }
 
         mockMvc.perform(login("mixed.case@verysmartbus.com", PASSWORD))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(login("MIXED.CASE", PASSWORD))
                 .andExpect(status().isOk());
     }
 
@@ -174,6 +192,7 @@ class AuthSecurityIntegrationTest {
 
         mockMvc.perform(get("/api/auth/me").header(HttpHeaders.AUTHORIZATION, bearer("driver@verysmartbus.com")))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("driver"))
                 .andExpect(jsonPath("$.email").value("driver@verysmartbus.com"))
                 .andExpect(jsonPath("$.address").value("Depot"))
                 .andExpect(jsonPath("$.status").value("ACTIVE"))
@@ -219,8 +238,8 @@ class AuthSecurityIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
-    private org.springframework.test.web.servlet.RequestBuilder login(String email, String password) throws Exception {
-        String json = objectMapper.writeValueAsString(java.util.Map.of("email", email, "password", password));
+    private org.springframework.test.web.servlet.RequestBuilder login(String identifier, String password) throws Exception {
+        String json = objectMapper.writeValueAsString(java.util.Map.of("identifier", identifier, "password", password));
         return post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(json);
     }
 

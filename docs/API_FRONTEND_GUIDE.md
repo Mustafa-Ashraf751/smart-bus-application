@@ -25,8 +25,11 @@ source of truth for every field and response schema while developing:
 ### `POST /api/auth/login` — public
 
 ```json
-{ "email": "passenger@example.com", "password": "password" }
+{ "identifier": "passenger@example.com", "password": "password" }
 ```
+
+`identifier` accepts either the user's unique `username` (for example `sara.ahmed`)
+or email address. The same password is used in both cases.
 
 The response contains `accessToken`, `tokenType`, `expiresInSeconds`, and `user`.
 Keep the token according to the frontend security approach and attach it as the
@@ -41,6 +44,7 @@ a role: public registration always assigns only the `EMPLOYEE` role, which has
 ```json
 {
   "name": "Sara Ahmed",
+  "username": "sara.ahmed",
   "phone": "01000000000",
   "address": "Sheikh Zayed",
   "email": "sara@example.com",
@@ -48,13 +52,13 @@ a role: public registration always assigns only the `EMPLOYEE` role, which has
 }
 ```
 
-Returns `201 Created` with its ID, email, `PENDING` status, and approval message—**not a
+Returns `201 Created` with its ID, username, email, `PENDING` status, and approval message—**not a
 JWT**. Show a “waiting for admin approval” screen. A pending or rejected account cannot
 log in. A duplicate email returns `409 Conflict`; password must be 8–72 characters.
 
 ### `GET /api/auth/me` — logged-in user
 
-Returns current user identity, status, roles, and permissions. Call this after app
+Returns current user identity, including `username` and email, status, roles, and permissions. Call this after app
 reload if the frontend needs the latest role/permission state.
 
 ## 3. Passenger app
@@ -243,6 +247,7 @@ Create/update body:
 ```json
 {
   "name": "Sara Ahmed",
+  "username": "sara.ahmed",
   "phone": "01000000000",
   "address": "Sheikh Zayed",
   "email": "sara@example.com",
@@ -444,6 +449,8 @@ after the database transaction commits. Keep a REST fallback: on reconnect, call
 ## 8. Frontend implementation notes
 
 - Treat `accessToken` as sensitive. Never log it or include it in URLs.
+- `username` is a unique login identity, not the display `name`. Validate it as 3–50
+  characters using lowercase letters, numbers, `.`, `_`, or `-`; the backend lowercases it.
 - A `TripResponseDto` identifies a daily execution. Its `routeId` identifies the
   reusable route template behind it.
 - `locationStale` should show a clear UI message such as “Location has not been

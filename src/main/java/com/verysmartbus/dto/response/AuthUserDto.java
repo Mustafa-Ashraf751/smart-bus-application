@@ -12,6 +12,7 @@ import java.util.List;
 public record AuthUserDto(
         Long userId,
         String name,
+        String username,
         String email,
         String phone,
         String address,
@@ -23,6 +24,7 @@ public record AuthUserDto(
         return new AuthUserDto(
                 principal.getUserId(),
                 principal.getName(),
+                principal.getLoginUsername(),
                 principal.getUsername(),
                 principal.getPhone(),
                 principal.getAddress(),

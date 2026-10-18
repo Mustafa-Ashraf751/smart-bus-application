@@ -47,10 +47,10 @@ public class GlobalExceptionHandler {
     }
 
     // Failed login (wrong password, unknown or disabled account). One generic message so the
-    // response does not reveal which emails exist.
+    // response does not reveal which usernames or emails exist.
     @ExceptionHandler(AuthenticationException.class)
     public ProblemDetail handleAuthentication(AuthenticationException ex) {
-        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Invalid email or password.");
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Invalid username, email, or password.");
         pd.setProperty("timestamp", Instant.now());
         return pd;
     }
