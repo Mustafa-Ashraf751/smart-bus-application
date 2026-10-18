@@ -38,6 +38,24 @@ spring:
     # Migrations from parallel branches must therefore not depend on each other.
     out-of-order: true
 
+  # ─── Transactional email (Brevo SMTP) ──────────────────────
+  # Credentials come only from the environment/.env and are never committed.
+  mail:
+    host: ${SMTP_HOST:}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: ${SMTP_CONNECTION_TIMEOUT_MS:5000}
+          timeout: ${SMTP_READ_TIMEOUT_MS:10000}
+          writetimeout: ${SMTP_WRITE_TIMEOUT_MS:10000}
+
 # ─── Server ────────────────────────────────────────────────
 server:
   port: 8080
@@ -61,6 +79,18 @@ app:
       batch-size: ${NOTIFICATION_OUTBOX_BATCH_SIZE:100}
       retry-delay-seconds: ${NOTIFICATION_OUTBOX_RETRY_DELAY_SECONDS:10}
       processing-timeout-seconds: ${NOTIFICATION_OUTBOX_PROCESSING_TIMEOUT_SECONDS:60}
+    email:
+      # Leave false locally until Brevo's verified SMTP settings are configured.
+      enabled: ${EMAIL_NOTIFICATIONS_ENABLED:false}
+      from-address: ${MAIL_FROM_ADDRESS:}
+      from-name: ${MAIL_FROM_NAME:VerySmartBus}
+      frontend-login-url: ${APP_FRONTEND_LOGIN_URL:}
+      poll-delay-ms: ${EMAIL_OUTBOX_POLL_DELAY_MS:5000}
+      batch-size: ${EMAIL_OUTBOX_BATCH_SIZE:25}
+      initial-retry-delay-seconds: ${EMAIL_OUTBOX_INITIAL_RETRY_DELAY_SECONDS:30}
+      max-retry-delay-seconds: ${EMAIL_OUTBOX_MAX_RETRY_DELAY_SECONDS:3600}
+      max-attempts: ${EMAIL_OUTBOX_MAX_ATTEMPTS:5}
+      processing-timeout-seconds: ${EMAIL_OUTBOX_PROCESSING_TIMEOUT_SECONDS:120}
   # Comma-separated browser origins allowed to call the API and open the WebSocket.
   # Patterns are allowed, e.g. "https://app.example.com,http://localhost:*" or "*" for any origin.
   cors:
@@ -68,6 +98,10 @@ app:
 
 # ─── Actuator ─────────────────────────────────────────────
 management:
+  health:
+    # Spring Boot's mail health contributor is meaningful only when SMTP delivery is enabled.
+    mail:
+      enabled: ${EMAIL_NOTIFICATIONS_ENABLED:false}
   endpoints:
     web:
       exposure:

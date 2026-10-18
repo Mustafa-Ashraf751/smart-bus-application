@@ -1,6 +1,7 @@
 package com.verysmartbus.entity.enums;
 
 public enum NotificationType {
+    REGISTRATION_APPROVED,
     RESERVATION_CONFIRMED,
     RESERVATION_WAITLISTED,
     WAITLIST_PROMOTED,

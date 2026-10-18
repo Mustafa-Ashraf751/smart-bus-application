@@ -3,6 +3,7 @@ package com.verysmartbus.service;
 import com.verysmartbus.dto.response.NotificationResponseDto;
 import com.verysmartbus.websocket.NotificationDelivery;
 import com.verysmartbus.websocket.NotificationWebSocketPublisher;
+import com.verysmartbus.entity.enums.NotificationDeliveryChannel;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -28,13 +29,13 @@ class NotificationOutboxWorkerTest {
         ReflectionTestUtils.setField(worker, "batchSize", 50);
         ReflectionTestUtils.setField(worker, "retryDelaySeconds", 10L);
         ReflectionTestUtils.setField(worker, "processingTimeoutSeconds", 60L);
-        when(outboxService.claimPendingBatch(50)).thenReturn(List.of(11L, 12L));
-        when(outboxService.getDelivery(11L)).thenReturn(first);
-        when(outboxService.getDelivery(12L)).thenReturn(second);
+        when(outboxService.claimPendingBatch(NotificationDeliveryChannel.WEBSOCKET, 50)).thenReturn(List.of(11L, 12L));
+        when(outboxService.getWebSocketDelivery(11L)).thenReturn(first);
+        when(outboxService.getWebSocketDelivery(12L)).thenReturn(second);
 
         worker.dispatchPendingNotifications();
 
-        verify(outboxService).recoverStaleProcessing(60L);
+        verify(outboxService).recoverStaleProcessing(NotificationDeliveryChannel.WEBSOCKET, 60L, 10L);
         verify(publisher).publish(first);
         verify(publisher).publish(second);
         verify(outboxService).markSent(11L);
@@ -47,8 +48,8 @@ class NotificationOutboxWorkerTest {
         ReflectionTestUtils.setField(worker, "batchSize", 50);
         ReflectionTestUtils.setField(worker, "retryDelaySeconds", 10L);
         ReflectionTestUtils.setField(worker, "processingTimeoutSeconds", 60L);
-        when(outboxService.claimPendingBatch(50)).thenReturn(List.of(11L));
-        when(outboxService.getDelivery(11L)).thenReturn(delivery);
+        when(outboxService.claimPendingBatch(NotificationDeliveryChannel.WEBSOCKET, 50)).thenReturn(List.of(11L));
+        when(outboxService.getWebSocketDelivery(11L)).thenReturn(delivery);
         doThrow(new IllegalStateException("socket unavailable")).when(publisher).publish(delivery);
 
         worker.dispatchPendingNotifications();

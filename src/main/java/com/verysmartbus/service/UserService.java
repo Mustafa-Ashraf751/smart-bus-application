@@ -24,6 +24,7 @@ public class UserService {
     private final RoleRepository roleRepository;
     private final UserMapper mapper;
     private final PasswordEncoder passwordEncoder;
+    private final NotificationService notificationService;
 
     @Transactional
     public UserResponseDto create(UserRequestDto dto) {
@@ -96,11 +97,14 @@ public class UserService {
     /** Approves a public registration. Admin-created users are already ACTIVE. */
     @Transactional
     public UserResponseDto approve(Long userId) {
-        AppUser user = findOrThrow(userId);
+        // The lock prevents two concurrent approval requests from producing duplicate jobs.
+        AppUser user = userRepository.findByIdForUpdate(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found: " + userId));
         if (user.getStatus() != UserStatus.PENDING) {
             throw new IllegalStateException("Only pending registrations can be approved.");
         }
         user.setStatus(UserStatus.ACTIVE);
+        notificationService.createRegistrationApprovedNotification(user);
         return mapper.toResponseDto(user);
     }
 

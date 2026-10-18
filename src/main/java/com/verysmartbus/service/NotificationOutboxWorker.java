@@ -1,6 +1,7 @@
 package com.verysmartbus.service;
 
 import com.verysmartbus.websocket.NotificationWebSocketPublisher;
+import com.verysmartbus.entity.enums.NotificationDeliveryChannel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -31,10 +32,11 @@ public class NotificationOutboxWorker {
 
     @Scheduled(fixedDelayString = "${app.notifications.outbox.poll-delay-ms:5000}")
     public void dispatchPendingNotifications() {
-        notificationOutboxService.recoverStaleProcessing(processingTimeoutSeconds);
-        for (Long outboxId : notificationOutboxService.claimPendingBatch(batchSize)) {
+        notificationOutboxService.recoverStaleProcessing(
+                NotificationDeliveryChannel.WEBSOCKET, processingTimeoutSeconds, retryDelaySeconds);
+        for (Long outboxId : notificationOutboxService.claimPendingBatch(NotificationDeliveryChannel.WEBSOCKET, batchSize)) {
             try {
-                notificationWebSocketPublisher.publish(notificationOutboxService.getDelivery(outboxId));
+                notificationWebSocketPublisher.publish(notificationOutboxService.getWebSocketDelivery(outboxId));
                 notificationOutboxService.markSent(outboxId);
             } catch (RuntimeException exception) {
                 notificationOutboxService.scheduleRetry(outboxId, exception.getMessage(), retryDelaySeconds);

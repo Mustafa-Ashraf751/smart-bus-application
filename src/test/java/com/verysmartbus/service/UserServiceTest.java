@@ -19,6 +19,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -31,6 +32,8 @@ class UserServiceTest {
     private UserMapper userMapper;
     @Mock
     private PasswordEncoder passwordEncoder;
+    @Mock
+    private NotificationService notificationService;
 
     @InjectMocks
     private UserService userService;
@@ -76,5 +79,23 @@ class UserServiceTest {
 
         assertThat(userService.update(15L, request)).isSameAs(expected);
         assertThat(existing.getUsername()).isEqualTo("sara.new");
+    }
+
+    @Test
+    void approvalActivatesThePendingUserAndCreatesTheDurableApprovalNotification() {
+        AppUser pending = AppUser.builder()
+                .id(18L)
+                .username("new.employee")
+                .email("new.employee@example.com")
+                .status(com.verysmartbus.entity.enums.UserStatus.PENDING)
+                .build();
+        UserResponseDto expected = org.mockito.Mockito.mock(UserResponseDto.class);
+        when(userRepository.findByIdForUpdate(18L)).thenReturn(Optional.of(pending));
+        when(userMapper.toResponseDto(pending)).thenReturn(expected);
+
+        assertThat(userService.approve(18L)).isSameAs(expected);
+
+        assertThat(pending.getStatus()).isEqualTo(com.verysmartbus.entity.enums.UserStatus.ACTIVE);
+        verify(notificationService).createRegistrationApprovedNotification(pending);
     }
 }

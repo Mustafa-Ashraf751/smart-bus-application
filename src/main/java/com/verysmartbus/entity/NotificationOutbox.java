@@ -1,6 +1,7 @@
 package com.verysmartbus.entity;
 
 import com.verysmartbus.entity.enums.NotificationOutboxStatus;
+import com.verysmartbus.entity.enums.NotificationDeliveryChannel;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -41,8 +42,17 @@ public class NotificationOutbox {
             foreignKey = @ForeignKey(name = "fk_notification_outbox_notification"))
     private Notification notification;
 
-    @Column(name = "event_key", nullable = false, unique = true, length = 200)
+    @Column(name = "event_key", nullable = false, length = 200)
     private String eventKey;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "delivery_channel", nullable = false, length = 20)
+    @Builder.Default
+    private NotificationDeliveryChannel deliveryChannel = NotificationDeliveryChannel.WEBSOCKET;
+
+    /** Snapshot the address used for an email job so a later user-profile edit cannot redirect it. */
+    @Column(name = "recipient_email", length = 150)
+    private String recipientEmail;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -79,6 +89,12 @@ public class NotificationOutbox {
         this.sentAt = sentAt;
         this.lockedAt = null;
         this.lastError = null;
+    }
+
+    public void markFailed(String error) {
+        this.status = NotificationOutboxStatus.FAILED;
+        this.lockedAt = null;
+        this.lastError = error;
     }
 
     public void scheduleRetry(OffsetDateTime nextAttemptAt, String error) {

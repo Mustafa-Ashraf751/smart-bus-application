@@ -3,6 +3,8 @@ package com.verysmartbus.security;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.verysmartbus.entity.AppUser;
+import com.verysmartbus.entity.enums.NotificationDeliveryChannel;
+import com.verysmartbus.repository.NotificationOutboxRepository;
 import com.verysmartbus.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +46,9 @@ class AuthSecurityIntegrationTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private NotificationOutboxRepository notificationOutboxRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -88,11 +93,21 @@ class AuthSecurityIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("ACTIVE"));
 
+        assertThat(notificationOutboxRepository.findByEventKeyAndDeliveryChannel(
+                "registration-approved:" + userId, NotificationDeliveryChannel.EMAIL)).isPresent();
+
         mockMvc.perform(login("new.passenger", PASSWORD))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.user.username").value("new.passenger"))
                 .andExpect(jsonPath("$.user.roles[0]").value("EMPLOYEE"))
                 .andExpect(jsonPath("$.user.permissions[0]").value("BOOK_TRIP"));
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch(
+                        "/api/admin/users/{userId}/approve", userId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer("admin@verysmartbus.com")))
+                .andExpect(status().isConflict());
+        assertThat(notificationOutboxRepository.findByEventKeyAndDeliveryChannel(
+                "registration-approved:" + userId, NotificationDeliveryChannel.EMAIL)).isPresent();
     }
 
     @Test

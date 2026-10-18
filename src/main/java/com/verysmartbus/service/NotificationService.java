@@ -1,10 +1,15 @@
 package com.verysmartbus.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.verysmartbus.dto.response.NotificationResponseDto;
+import com.verysmartbus.email.EmailNotificationProperties;
+import com.verysmartbus.email.RegistrationApprovedEmailPayload;
 import com.verysmartbus.entity.AppUser;
 import com.verysmartbus.entity.Notification;
 import com.verysmartbus.entity.NotificationOutbox;
 import com.verysmartbus.entity.enums.NotificationType;
+import com.verysmartbus.entity.enums.NotificationDeliveryChannel;
 import com.verysmartbus.exception.ForbiddenOperationException;
 import com.verysmartbus.exception.ResourceNotFoundException;
 import com.verysmartbus.mapper.NotificationMapper;
@@ -27,6 +32,8 @@ public class NotificationService {
     private final NotificationOutboxRepository notificationOutboxRepository;
     private final UserRepository userRepository;
     private final NotificationMapper notificationMapper;
+    private final ObjectMapper objectMapper;
+    private final EmailNotificationProperties emailProperties;
 
     /**
      * Future business services call this inside their own transaction. The durable inbox record and
@@ -41,10 +48,55 @@ public class NotificationService {
             String payloadJson,
             String eventKey
     ) {
-        return notificationOutboxRepository.findByEventKey(eventKey)
+        return notificationOutboxRepository.findByEventKeyAndDeliveryChannel(
+                        eventKey, NotificationDeliveryChannel.WEBSOCKET)
                 .map(existing -> notificationMapper.toResponseDto(existing.getNotification()))
                 .orElseGet(() -> createNotificationAndOutbox(
                         recipientUserId, type, title, message, payloadJson, eventKey));
+    }
+
+    /**
+     * Approval is both an inbox notification and an email event. Both outbox rows are saved in
+     * the caller's transaction, so an ACTIVE account cannot commit without its durable email job.
+     */
+    @Transactional
+    public void createRegistrationApprovedNotification(AppUser user) {
+        String eventKey = "registration-approved:" + user.getId();
+        if (notificationOutboxRepository.findByEventKeyAndDeliveryChannel(
+                eventKey, NotificationDeliveryChannel.EMAIL).isPresent()) {
+            return;
+        }
+
+        String payloadJson;
+        try {
+            payloadJson = objectMapper.writeValueAsString(new RegistrationApprovedEmailPayload(
+                    user.getName(), user.getUsername(), user.getEmail(), emailProperties.getFrontendLoginUrl()));
+        } catch (JsonProcessingException exception) {
+            throw new IllegalStateException("Could not create the registration approval email event.", exception);
+        }
+
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+        Notification notification = notificationRepository.save(Notification.builder()
+                .recipient(user)
+                .type(NotificationType.REGISTRATION_APPROVED)
+                .title("Your account has been approved")
+                .message("Your VerySmartBus account is active. You can now log in.")
+                .payloadJson(payloadJson)
+                .build());
+
+        notificationOutboxRepository.save(NotificationOutbox.builder()
+                .notification(notification)
+                .eventKey(eventKey)
+                .deliveryChannel(NotificationDeliveryChannel.WEBSOCKET)
+                .nextAttemptAt(now)
+                .build());
+        notificationOutboxRepository.save(NotificationOutbox.builder()
+                .notification(notification)
+                .eventKey(eventKey)
+                .deliveryChannel(NotificationDeliveryChannel.EMAIL)
+                .recipientEmail(user.getEmail())
+                .nextAttemptAt(now)
+                .build());
     }
 
     @Transactional(readOnly = true)
@@ -95,6 +147,7 @@ public class NotificationService {
         notificationOutboxRepository.save(NotificationOutbox.builder()
                 .notification(notification)
                 .eventKey(eventKey)
+                .deliveryChannel(NotificationDeliveryChannel.WEBSOCKET)
                 .nextAttemptAt(now)
                 .build());
         return notificationMapper.toResponseDto(notification);

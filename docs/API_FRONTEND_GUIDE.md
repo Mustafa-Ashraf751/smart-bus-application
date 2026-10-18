@@ -235,7 +235,7 @@ must be called without a JSON request body.
 | GET | `/api/admin/users` | List every user, including `PENDING` registrations. |
 | GET | `/api/admin/users/{userId}` | Get one user. |
 | PUT | `/api/admin/users/{userId}` | Update user data. Password may be omitted when it should not change. |
-| PATCH | `/api/admin/users/{userId}/approve` | Approve a registered pending user and make the account active. **No body.** |
+| PATCH | `/api/admin/users/{userId}/approve` | Approve a registered pending user, make the account active, and queue an in-app notification plus an approval email. **No body.** |
 | PATCH | `/api/admin/users/{userId}/reject` | Reject/deactivate a registration. **No body.** |
 | PATCH | `/api/admin/users/{userId}/activate` | Activate an existing user. **No body.** |
 | PATCH | `/api/admin/users/{userId}/deactivate` | Deactivate a user. **No body.** |

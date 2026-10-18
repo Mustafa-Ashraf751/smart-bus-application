@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account approved</title>
+</head>
+<body style="margin:0;background:#f4f7fb;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f7fb;padding:24px 12px;">
+    <tr>
+        <td align="center">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;background:#ffffff;border-radius:12px;overflow:hidden;">
+                <tr>
+                    <td style="background:#0f766e;padding:28px 36px;color:#ffffff;">
+                        <h1 style="margin:0;font-size:24px;">VerySmartBus</h1>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding:36px;line-height:1.6;font-size:16px;">
+                        <p style="margin-top:0;">Hi <strong th:text="${name}">Employee</strong>,</p>
+                        <p>Your registration request has been approved. Your VerySmartBus account is now active and ready to use.</p>
+                        <table role="presentation" cellspacing="0" cellpadding="0" style="width:100%;background:#f0fdfa;border-radius:8px;margin:24px 0;">
+                            <tr>
+                                <td style="padding:16px;">
+                                    <div><strong>Username:</strong> <span th:text="${username}">username</span></div>
+                                    <div><strong>Email:</strong> <span th:text="${email}">email@example.com</span></div>
+                                </td>
+                            </tr>
+                        </table>
+                        <p style="margin:24px 0;text-align:center;">
+                            <a th:href="${loginUrl}" style="display:inline-block;background:#0f766e;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:6px;font-weight:bold;">Log in to VerySmartBus</a>
+                        </p>
+                        <p style="margin-bottom:0;">Welcome aboard,<br><strong>The VerySmartBus Team</strong></p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+</body>
+</html>
